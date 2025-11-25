@@ -16,12 +16,14 @@ export const useOrganizationStore = defineStore('organization', {
     }
   }),
   actions: {
-    async fetchOrganizations({ page = 1, pageSize = DEFAULT_PAGE_SIZE, search = '', searchBy = 'name', sortBy = 'name', sortOrder = 'asc', isActive = '' } = {}) {
+    async fetchOrganizations({ page = 1, pageSize = DEFAULT_PAGE_SIZE, search = '', searchBy = 'name', sortBy = 'name', sortOrder = 'asc', isActive = '', pagination = true } = {}) {
       this.loading = true
       try {
         const params = new URLSearchParams()
-        params.append('page', page)
-        params.append('pageSize', pageSize)
+        if (pagination) {
+          params.append('page', page)
+          params.append('pageSize', pageSize)
+        }
         if (search && searchBy) {
           params.append(searchBy, search)
         }

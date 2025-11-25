@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import request from '../helpers/request'
 import { API_PATHS } from '../helpers/constants'
 
-const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10
 
 export const useServiceStore = defineStore('service', {
   state: () => ({
@@ -14,10 +14,20 @@ export const useServiceStore = defineStore('service', {
       page: 1,
       pageSize: DEFAULT_PAGE_SIZE,
       total: 0,
-    }
+    },
   }),
   actions: {
-    async fetchServices({ page = 1, pageSize = DEFAULT_PAGE_SIZE, search = '', searchBy = 'name', sortBy = 'name', sortOrder = 'asc', isActive = '', pagination = true } = {}) {
+    async fetchServices({
+      page = 1,
+      pageSize = DEFAULT_PAGE_SIZE,
+      search = '',
+      searchBy = 'name',
+      sortBy = 'name',
+      sortOrder = 'asc',
+      isActive = '',
+      organizationId = '',
+      pagination = true,
+    } = {}) {
       this.loading = true
       try {
         const params = new URLSearchParams()
@@ -36,6 +46,9 @@ export const useServiceStore = defineStore('service', {
         }
         if (isActive !== '') {
           params.append('isActive', isActive)
+        }
+        if (organizationId) {
+          params.append('organizationId', organizationId)
         }
 
         const response = await request.get(`${API_PATHS.SERVICES.GET_ALL}?${params.toString()}`)
@@ -110,6 +123,6 @@ export const useServiceStore = defineStore('service', {
       } finally {
         this.loading = false
       }
-    }
-  }
+    },
+  },
 })

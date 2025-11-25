@@ -4,9 +4,29 @@
 
     <div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
       <ComponentCard>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+          Select Organization
+        </h3>
+        <select
+          v-model="selectedOrganizationId"
+          class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+        >
+          <option :value="null">-- Select Organization --</option>
+          <option
+            v-for="organization in organizations"
+            :key="organization.id"
+            :value="organization.id"
+          >
+            {{ organization.name }}
+          </option>
+        </select>
+      </ComponentCard>
+
+      <ComponentCard>
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">Select Service</h3>
         <select
           v-model="selectedServiceId"
+          :disabled="!selectedOrganizationId || serviceStore.loading"
           class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
         >
           <option :value="null">-- Select Service --</option>
@@ -20,6 +40,7 @@
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">Select Counter</h3>
         <select
           v-model="selectedCounterId"
+          :disabled="!selectedServiceId || counterStore.loading"
           class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
         >
           <option :value="null">-- Select Counter --</option>
@@ -51,20 +72,6 @@
         >
           Call Next
         </button>
-        <button
-          @click="resolveTicket"
-          :disabled="!selectedCounterId || queueStore.loading"
-          class="flex items-center justify-center gap-2 h-11 px-6 rounded-lg bg-success-500 text-white font-medium hover:bg-success-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Resolve Current
-        </button>
-        <button
-          @click="retryTicket"
-          :disabled="!selectedCounterId || queueStore.loading"
-          class="flex items-center justify-center gap-2 h-11 px-6 rounded-lg bg-warning-500 text-white font-medium hover:bg-warning-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Retry Current
-        </button>
       </div>
     </ComponentCard>
 
@@ -90,7 +97,7 @@
                 </th>
                 <th class="px-5 py-3 text-left sm:px-6">
                   <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
-                    Called By
+                    Latest Assignee
                   </p>
                 </th>
                 <th class="px-5 py-3 text-left sm:px-6">
@@ -109,7 +116,7 @@
                 </td>
                 <td class="px-5 py-4 sm:px-6">
                   <p class="text-gray-500 text-theme-sm dark:text-gray-400">
-                    {{ ticket.ticketNumber }}
+                    {{ ticket.prefix }}-{{ ticket.queueNumber }}
                   </p>
                 </td>
                 <td class="px-5 py-4 sm:px-6">
@@ -118,31 +125,49 @@
                       'rounded-full px-2 py-0.5 text-theme-xs font-medium capitalize',
                       {
                         'bg-info-50 text-info-700 dark:bg-info-500/15 dark:text-info-500':
-                          ticket.status === 'waiting',
+                          getStatus(ticket) === 'waiting',
                         'bg-warning-50 text-warning-700 dark:bg-warning-500/15 dark:text-warning-500':
-                          ticket.status === 'in-progress',
+                          getStatus(ticket) === 'in-progress',
                         'bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-500':
-                          ticket.status === 'completed',
+                          getStatus(ticket) === 'completed',
                       },
                     ]"
                   >
-                    {{ ticket.status }}
+                    {{ getStatus(ticket) }}
                   </span>
                 </td>
                 <td class="px-5 py-4 sm:px-6">
                   <p class="text-gray-500 text-theme-sm dark:text-gray-400">
-                    {{ ticket.calledBy || 'N/A' }}
+                    {{ getCounterNumber(ticket.latestAssigneeCounterId) }}
                   </p>
                 </td>
                 <td class="px-5 py-4 sm:px-6">
-                  <button
-                    @click="() => prioritizeTicket(ticket.id)"
-                    :disabled="queueStore.loading || ticket.status !== 'waiting'"
-                    class="flex items-center px-2 py-1 rounded text-sm bg-brand-500 text-white hover:bg-brand-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Prioritize"
-                  >
-                    Prioritize
-                  </button>
+                  <div class="flex gap-2">
+                    <button
+                      @click="() => recallTicket(ticket)"
+                      :disabled="
+                        queueStore.loading ||
+                        !selectedCounterId ||
+                        getStatus(ticket) !== 'in-progress'
+                      "
+                      class="flex items-center px-2 py-1 rounded text-sm bg-brand-500 text-white hover:bg-brand-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Recall"
+                    >
+                      Recall
+                    </button>
+                    <button
+                      @click="() => resolveTicketForRow(ticket)"
+                      :disabled="
+                        queueStore.loading ||
+                        !selectedCounterId ||
+                        getStatus(ticket) !== 'in-progress'
+                      "
+                      class="flex items-center px-2 py-1 rounded text-sm bg-success-500 text-white hover:bg-success-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Resolve"
+                    >
+                      Resolve
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -157,7 +182,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import PageTitle from '@/components/common/PageTitle.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { useQueueStore, useServiceStore, useCounterStore } from '@/stores'
+import { useQueueStore, useServiceStore, useCounterStore, useOrganizationStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 import { io } from 'socket.io-client'
@@ -171,8 +196,12 @@ const {
   performTicketAction,
   fetchQueueList,
   fetchQueueSummary,
-  prioritizeTicket: storePrioritizeTicket,
+  // prioritizeTicket: storePrioritizeTicket,
 } = queueStore
+
+const organizationStore = useOrganizationStore()
+const { organizations } = storeToRefs(organizationStore)
+const { fetchOrganizations } = organizationStore
 
 const serviceStore = useServiceStore()
 const { services } = storeToRefs(serviceStore)
@@ -182,6 +211,7 @@ const counterStore = useCounterStore()
 const { counters } = storeToRefs(counterStore)
 const { fetchCounters } = counterStore
 
+const selectedOrganizationId = ref(null)
 const selectedServiceId = ref(null)
 const selectedCounterId = ref(null)
 
@@ -239,8 +269,8 @@ const disconnectSocket = () => {
 
 const fetchQueueData = async () => {
   if (selectedServiceId.value) {
-    await fetchQueueList(selectedServiceId.value)
-    await fetchQueueSummary(selectedServiceId.value)
+    await fetchQueueList(selectedServiceId.value, { status: 'in-progress' })
+    await fetchQueueSummary(selectedServiceId.value, { status: 'in-progress' })
   }
 }
 
@@ -253,76 +283,80 @@ const callNext = async () => {
     await callNextTicket({ serviceId: selectedServiceId.value, counterId: selectedCounterId.value })
     // Data will be updated via WebSocket event
   } catch (error) {
+    console.error('Error calling next ticket:', error)
     showErrorToast('Failed to call next ticket.')
   }
 }
 
-const resolveTicket = async () => {
+const resolveTicketForRow = async (ticket) => {
   if (!selectedServiceId.value || !selectedCounterId.value) {
     showErrorToast('Please select both a service and a counter.')
-    return
-  }
-  const currentTicket = queueList.value.find(
-    (ticket) => ticket.status === 'in-progress' && ticket.calledBy === selectedCounterId.value,
-  )
-  if (!currentTicket) {
-    showErrorToast('No ticket in progress for this counter.')
     return
   }
   try {
     await performTicketAction({
       action: 'resolve',
-      queueId: currentTicket.id,
+      queueId: ticket.id,
       counterId: selectedCounterId.value,
     })
-    // Data will be updated via WebSocket event
   } catch (error) {
+    console.error('Error resolving ticket:', error)
     showErrorToast('Failed to resolve ticket.')
   }
 }
 
-const retryTicket = async () => {
+const recallTicket = async (ticket) => {
   if (!selectedServiceId.value || !selectedCounterId.value) {
     showErrorToast('Please select both a service and a counter.')
-    return
-  }
-  const currentTicket = queueList.value.find(
-    (ticket) => ticket.status === 'in-progress' && ticket.calledBy === selectedCounterId.value,
-  )
-  if (!currentTicket) {
-    showErrorToast('No ticket in progress for this counter.')
     return
   }
   try {
     await performTicketAction({
       action: 'retry',
-      queueId: currentTicket.id,
+      queueId: ticket.id,
       counterId: selectedCounterId.value,
     })
-    // Data will be updated via WebSocket event
   } catch (error) {
-    showErrorToast('Failed to retry ticket.')
+    console.error('Error recalling ticket:', error)
+    showErrorToast('Failed to recall ticket.')
   }
 }
 
-const prioritizeTicket = async (queueId) => {
-  try {
-    await storePrioritizeTicket(queueId)
-    // Data will be updated via WebSocket event
-  } catch (error) {
-    showErrorToast('Failed to prioritize ticket.')
-  }
+const getStatus = (ticket) => {
+  if (ticket.isResolved) return 'completed'
+  if (ticket.isCall) return 'in-progress'
+  return 'waiting'
+}
+
+const getCounterNumber = (counterId) => {
+  const counter = counters.value.find((c) => c.id === counterId)
+  return counter ? counter.counterNumber : 'N/A'
 }
 
 onMounted(async () => {
-  await fetchServices({ pagination: false })
-  await fetchCounters({ pagination: false })
-
-  if (services.value.length > 0) {
-    selectedServiceId.value = services.value[0].id
-  }
-  if (counters.value.length > 0) {
-    selectedCounterId.value = counters.value[0].id
+  await fetchOrganizations({ pagination: false, sortBy: 'name', sortOrder: 'asc' })
+  if (organizations.value.length > 0) {
+    selectedOrganizationId.value = organizations.value[0].id
+    await fetchServices({
+      pagination: false,
+      organizationId: selectedOrganizationId.value,
+      isActive: true,
+      sortBy: 'name',
+      sortOrder: 'asc',
+    })
+    if (services.value.length > 0) {
+      selectedServiceId.value = services.value[0].id
+      await fetchCounters({
+        pagination: false,
+        serviceId: selectedServiceId.value,
+        isActive: true,
+        sortBy: 'counterNumber',
+        sortOrder: 'asc',
+      })
+      if (counters.value.length > 0) {
+        selectedCounterId.value = counters.value[0].id
+      }
+    }
   }
   connectSocket()
   fetchQueueData()
@@ -332,13 +366,44 @@ onUnmounted(() => {
   disconnectSocket()
 })
 
-watch(selectedServiceId, (newServiceId, oldServiceId) => {
+watch(selectedOrganizationId, async (newOrgId) => {
+  selectedServiceId.value = null
+  selectedCounterId.value = null
+  services.value = []
+  counters.value = []
+  if (newOrgId) {
+    await fetchServices({
+      pagination: false,
+      organizationId: newOrgId,
+      isActive: true,
+      sortBy: 'name',
+      sortOrder: 'asc',
+    })
+    if (services.value.length > 0) {
+      selectedServiceId.value = services.value[0].id
+    }
+  }
+})
+watch(selectedServiceId, async (newServiceId, oldServiceId) => {
   if (socket && socket.connected) {
     if (oldServiceId) {
       socket.emit('leave-service-room', oldServiceId)
     }
     if (newServiceId) {
       socket.emit('join-service-room', newServiceId)
+    }
+  }
+  selectedCounterId.value = null
+  if (newServiceId) {
+    await fetchCounters({
+      pagination: false,
+      serviceId: newServiceId,
+      isActive: true,
+      sortBy: 'counterNumber',
+      sortOrder: 'asc',
+    })
+    if (counters.value.length > 0) {
+      selectedCounterId.value = counters.value[0].id
     }
   }
   fetchQueueData()
