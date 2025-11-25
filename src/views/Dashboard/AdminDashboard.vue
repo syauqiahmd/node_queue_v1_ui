@@ -3,7 +3,7 @@
     <PageTitle :pageTitle="currentPageTitle" />
 
     <div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-      <ComponentCard>
+      <ComponentCard v-if="isAdmin">
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
           Select Organization
         </h3>
@@ -48,17 +48,6 @@
             {{ counter.counterNumber }}
           </option>
         </select>
-      </ComponentCard>
-
-      <ComponentCard v-if="queueSummary">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">Queue Summary</h3>
-        <div class="space-y-2">
-          <p class="text-gray-700 dark:text-gray-300">
-            Total Queued: {{ queueSummary.totalQueued }}
-          </p>
-          <p class="text-gray-700 dark:text-gray-300">In Progress: {{ queueSummary.inProgress }}</p>
-          <p class="text-gray-700 dark:text-gray-300">Completed: {{ queueSummary.completed }}</p>
-        </div>
       </ComponentCard>
     </div>
 
@@ -190,16 +179,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import PageTitle from '@/components/common/PageTitle.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import { useQueueStore, useServiceStore, useCounterStore, useOrganizationStore } from '@/stores'
+import { useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 import { io } from 'socket.io-client'
 
 const currentPageTitle = ref('Queue Management')
 const hasNewTickets = ref(false)
+const authStore = useAuthStore()
+const isAdmin = computed(() => (authStore.user?.role || authStore.user?.roleName) === 'ADMIN')
 
 const queueStore = useQueueStore()
 const { queueList, queueSummary } = storeToRefs(queueStore)
@@ -285,7 +277,8 @@ const disconnectSocket = () => {
 const fetchQueueData = async () => {
   if (selectedServiceId.value) {
     await fetchQueueList(selectedServiceId.value, { status: 'in-progress' })
-    await fetchQueueSummary(selectedServiceId.value, { status: 'in-progress' })
+    await fetchQueueSummary(selectedServiceId.value, {})
+    hasNewTickets.value = !!(queueSummary.value && queueSummary.value.totalRecords > 0)
   }
 }
 
@@ -350,27 +343,54 @@ const getCounterNumber = (counterId) => {
 }
 
 onMounted(async () => {
-  await fetchOrganizations({ pagination: false, sortBy: 'name', sortOrder: 'asc' })
-  if (organizations.value.length > 0) {
-    selectedOrganizationId.value = organizations.value[0].id
-    await fetchServices({
-      pagination: false,
-      organizationId: selectedOrganizationId.value,
-      isActive: true,
-      sortBy: 'name',
-      sortOrder: 'asc',
-    })
-    if (services.value.length > 0) {
-      selectedServiceId.value = services.value[0].id
-      await fetchCounters({
+  if (isAdmin.value) {
+    await fetchOrganizations({ pagination: false, sortBy: 'name', sortOrder: 'asc' })
+    if (organizations.value.length > 0) {
+      selectedOrganizationId.value = organizations.value[0].id
+      await fetchServices({
         pagination: false,
-        serviceId: selectedServiceId.value,
+        organizationId: selectedOrganizationId.value,
         isActive: true,
-        sortBy: 'counterNumber',
+        sortBy: 'name',
         sortOrder: 'asc',
       })
-      if (counters.value.length > 0) {
-        selectedCounterId.value = counters.value[0].id
+      if (services.value.length > 0) {
+        selectedServiceId.value = services.value[0].id
+        await fetchCounters({
+          pagination: false,
+          serviceId: selectedServiceId.value,
+          isActive: true,
+          sortBy: 'counterNumber',
+          sortOrder: 'asc',
+        })
+        if (counters.value.length > 0) {
+          selectedCounterId.value = counters.value[0].id
+        }
+      }
+    }
+  } else {
+    const orgId = authStore.user?.organization?.organizationId
+    if (orgId) {
+      selectedOrganizationId.value = orgId
+      await fetchServices({
+        pagination: false,
+        organizationId: orgId,
+        isActive: true,
+        sortBy: 'name',
+        sortOrder: 'asc',
+      })
+      if (services.value.length > 0) {
+        selectedServiceId.value = services.value[0].id
+        await fetchCounters({
+          pagination: false,
+          serviceId: selectedServiceId.value,
+          isActive: true,
+          sortBy: 'counterNumber',
+          sortOrder: 'asc',
+        })
+        if (counters.value.length > 0) {
+          selectedCounterId.value = counters.value[0].id
+        }
       }
     }
   }
@@ -428,6 +448,31 @@ watch(selectedServiceId, async (newServiceId, oldServiceId) => {
 
 watch(selectedCounterId, () => {
   fetchQueueData()
+})
+
+const playBeep = () => {
+  try {
+    const C = window.AudioContext || window.webkitAudioContext
+    const ctx = new C()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = 'sine'
+    osc.frequency.value = 880
+    gain.gain.setValueAtTime(0.001, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01)
+    gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4)
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.start()
+    osc.stop(ctx.currentTime + 0.4)
+    setTimeout(() => ctx.close(), 500)
+  } catch (error) {
+    console.error('Error playing beep:', error)
+  }
+}
+
+watch(hasNewTickets, (val, old) => {
+  if (val && !old) playBeep()
 })
 </script>
 <style scoped>

@@ -177,7 +177,15 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { GridIcon, ChevronDownIcon, HorizontalDots, UserGroupIcon, BoxCubeIcon, TableIcon, ListIcon } from '../../icons'
+import {
+  GridIcon,
+  ChevronDownIcon,
+  HorizontalDots,
+  UserGroupIcon,
+  BoxCubeIcon,
+  TableIcon,
+  ListIcon,
+} from '../../icons'
 import { useSidebar } from '@/composables/useSidebar'
 import { TagIcon } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores'
@@ -188,9 +196,9 @@ const route = useRoute()
 const { isExpanded, isMobileOpen, isHovered, openSubmenu, closeSidebar } = useSidebar()
 
 const menuGroups = computed(() => {
-  const authStore = useAuthStore();
-  const { user } = storeToRefs(authStore);
-  const userRole = user.value?.role;
+  const authStore = useAuthStore()
+  const { user } = storeToRefs(authStore)
+  const userRole = user.value?.role
 
   const adminItems = [
     {
@@ -223,7 +231,7 @@ const menuGroups = computed(() => {
       name: 'Queue Management',
       path: '/admin/dashboard',
     },
-  ];
+  ]
 
   const userItems = [
     {
@@ -231,20 +239,15 @@ const menuGroups = computed(() => {
       name: 'Dashboard',
       path: '/admin/',
     },
-    {
-      icon: ListIcon,
-      name: 'Queue Management',
-      path: '/admin/dashboard',
-    },
-  ];
+  ]
 
   if (userRole === 'ADMIN') {
-    return [{ title: 'ADMIN MENU', items: adminItems }];
+    return [{ title: 'ADMIN MENU', items: adminItems }]
   } else if (userRole === 'USER') {
-    return [{ title: 'USER MENU', items: userItems }];
+    return [{ title: 'USER MENU', items: userItems }]
   }
-  return [];
-});
+  return []
+})
 
 const isActive = (path) => route.path === path
 
@@ -266,7 +269,9 @@ const isSubmenuOpen = (groupIndex, itemIndex) => {
   return (
     openSubmenu.value === key ||
     (isAnySubmenuRouteActive.value &&
-      menuGroups.value[groupIndex].items[itemIndex].subItems?.some((subItem) => isActive(subItem.path)))
+      menuGroups.value[groupIndex].items[itemIndex].subItems?.some((subItem) =>
+        isActive(subItem.path),
+      ))
   )
 }
 
