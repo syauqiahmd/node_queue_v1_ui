@@ -1,4 +1,3 @@
-
 <template>
   <PageTitle :pageTitle="currentPageTitle" />
   <div class="space-y-5 sm:space-y-6">
@@ -30,9 +29,13 @@
           </label>
           <select
             v-model="formData.organizationId"
+            :disabled="loading"
             class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
           >
-            <option v-for="org in organizations" :key="org.id" :value="org.id">{{ org.name }}</option>
+            <option :value="null">-- Select Organization --</option>
+            <option v-for="org in organizations" :key="org.id" :value="org.id">
+              {{ org.name }} - {{ org.fullName }}
+            </option>
           </select>
         </div>
         <div v-if="id">
@@ -45,16 +48,19 @@
               v-model="formData.isActive"
               class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
             />
-            <label for="isActive" class="ml-2 block text-sm text-gray-900 dark:text-gray-300">Active</label>
+            <label for="isActive" class="ml-2 block text-sm text-gray-900 dark:text-gray-300"
+              >Active</label
+            >
           </div>
         </div>
 
         <button
           type="button"
-          class="flex items-center justify-center gap-2 h-11 px-6 rounded-lg bg-brand-500 text-white font-medium hover:bg-brand-600 transition-colors"
+          :disabled="loading"
+          class="flex items-center justify-center gap-2 h-11 px-6 rounded-lg bg-brand-500 text-white font-medium hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           @click="handleSubmit"
         >
-          Save
+          {{ loading ? 'Saving...' : 'Save' }}
         </button>
       </div>
     </ComponentCard>
@@ -94,7 +100,13 @@ const formData = reactive({
 let id = null
 
 onMounted(async () => {
-  await fetchOrganizations({ pageSize: -1 }) // fetch all organizations
+  await fetchOrganizations({
+    pageSize: 25,
+    sortBy: 'name',
+    sortOrder: 'asc',
+    isActive: true,
+    pagination: true,
+  })
   id = route.params.id
   if (id) {
     serviceId.value = id
@@ -109,11 +121,26 @@ onMounted(async () => {
 
 const handleSubmit = async () => {
   try {
+    if (!formData.organizationId) {
+      showErrorToast('Please select an organization.')
+      return
+    }
     if (id) {
-      await updateService(id, formData)
+      const payload = {
+        name: formData.name,
+        prefix: formData.prefix,
+        organizationId: formData.organizationId,
+        isActive: formData.isActive,
+      }
+      await updateService(id, payload)
       showSuccessToast('Service updated successfully!')
     } else {
-      await createService(formData)
+      const payload = {
+        name: formData.name,
+        prefix: formData.prefix,
+        organizationId: formData.organizationId,
+      }
+      await createService(payload)
       showSuccessToast('Service created successfully!')
     }
     router.push('/admin/services')

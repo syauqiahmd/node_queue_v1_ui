@@ -13,10 +13,10 @@ export const API_PATHS = {
   SERVICES: {
     GET_ALL: '/v1/services',
     GET_ALL_PUBLIC: '/v1/public/services',
-    GET_DETAIL_BY_ID: (id) => `/services/${id}`,
+    GET_DETAIL_BY_ID: (id) => `/v1/services/${id}`,
     CREATE: '/v1/services',
-    UPDATE: (id) => `/services/${id}`,
-    DELETE: (id) => `/services/${id}`,
+    UPDATE: (id) => `/v1/services/${id}`,
+    DELETE: (id) => `/v1/services/${id}`,
   },
   COUNTERS: {
     GET_ALL: '/v1/counters',
