@@ -18,31 +18,46 @@
         @scroll="handleScroll"
       >
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-4">
+          <div v-if="isLoading" class="col-span-full text-center py-8">
+            <span class="text-white/70">Loading services...</span>
+          </div>
+          <div v-else-if="loadError" class="col-span-full text-center py-8">
+            <span class="text-red-400">{{ loadError }}</span>
+          </div>
           <div
-            v-for="org in organizations"
-            :key="org.id"
-            @click="selectOrganization(org)"
+            v-else
+            v-for="svc in publicServices"
+            :key="svc.id"
+            @click="selectOrganization(svc)"
             class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 md:p-6 transition-all duration-300 hover:bg-white/10 hover:scale-[1.02] hover:shadow-xl cursor-pointer flex items-center gap-4 group min-h-[80px] md:min-h-[100px] active:scale-[0.98] touch-manipulation"
           >
             <!-- Organization Logo -->
             <div
               class="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-white/20 flex items-center justify-center group-hover:border-emerald-400/40 transition-all"
             >
-              <img :src="org.logo" :alt="org.name" class="w-8 h-8 md:w-12 md:h-12 object-contain" />
+              <img
+                :src="
+                  (svc.organization && (svc.organization.logo || svc.organization.image)) ||
+                  defaultOrgImage
+                "
+                :alt="svc.organization?.name || 'Organization'"
+                class="w-8 h-8 md:w-12 md:h-12 object-contain"
+              />
             </div>
 
-            <!-- Organization Info -->
+            <!-- Service & Organization Info -->
             <div class="flex-1 min-w-0">
               <h2
                 class="text-white text-lg md:text-xl lg:text-2xl font-light group-hover:text-emerald-400 transition-colors truncate"
               >
-                {{ org.name }}
+                {{ svc.name
+                }}<span v-if="svc.prefix" class="text-white/40 ml-2">({{ svc.prefix }})</span>
               </h2>
-              <p
-                v-if="org.description"
-                class="text-white/60 text-sm md:text-base mt-1 line-clamp-2"
-              >
-                {{ org.description }}
+              <p class="text-white/60 text-sm md:text-base mt-1 truncate">
+                {{ svc.organization?.name
+                }}<span v-if="svc.organization?.fullName" class="text-white/40">
+                  — {{ svc.organization.fullName }}</span
+                >
               </p>
             </div>
 
@@ -123,6 +138,10 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useQueueStore, useServiceStore } from '@/stores'
+import { storeToRefs } from 'pinia'
+import { io } from 'socket.io-client'
+import defaultOrgImage from '@/assets/images/default-organization.svg'
 
 const currentDateTime = ref('')
 const showModal = ref(false)
@@ -152,75 +171,40 @@ const handleScroll = () => {
   }
 }
 
-// Generate 20 organizations for scrolling test
-const generateOrganizations = () => {
-  const orgTypes = [
-    'Customer Service',
-    'Account Management',
-    'Technical Support',
-    'Billing Department',
-    'New Applications',
-    'Returns & Exchanges',
-    'Consultations',
-    'Appointments',
-    'Information Desk',
-    'VIP Services',
-    'Product Support',
-    'Sales Department',
-    'Warranty Claims',
-    'Membership Services',
-    'Financial Services',
-    'Insurance Claims',
-    'Legal Department',
-    'Human Resources',
-    'Training Services',
-    'Executive Office',
-  ]
+const serviceStore = useServiceStore()
+const { publicServices } = storeToRefs(serviceStore)
+const { fetchPublicServices } = serviceStore
 
-  const descriptions = [
-    'General inquiries and support',
-    'Account updates and changes',
-    'Technical issues and troubleshooting',
-    'Payments and invoices',
-    'Apply for new services',
-    'Process returns or exchanges',
-    'One-on-one consultation services',
-    'Schedule or manage appointments',
-    'General information',
-    'Premium customer services',
-    'Product-related questions and issues',
-    'Purchase new products or services',
-    'Submit and track warranty claims',
-    'Membership benefits and inquiries',
-    'Financial advice and services',
-    'Submit and process insurance claims',
-    'Legal advice and documentation',
-    'Employment and benefits inquiries',
-    'Training programs and resources',
-    'Executive assistance and inquiries',
-  ]
+const queueStore = useQueueStore()
+const isLoading = ref(false)
+const loadError = ref('')
 
-  return orgTypes.map((name, index) => ({
-    id: index + 1,
-    name,
-    logo: `/placeholder.svg?height=100&width=100&text=${encodeURIComponent(name.substring(0, 2))}`,
-    description: descriptions[index],
-  }))
+let socket = null
+const connectSocket = () => {
+  const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+  const socketUrl = VITE_API_BASE_URL.replace(/\/api(\/v1)?$/, '')
+  socket = io(socketUrl)
 }
 
-// Sample organization data - 20 items for scrolling test
-const organizations = ref(generateOrganizations())
-
-// Function to select organization and generate ticket
-const selectOrganization = (org) => {
-  selectedOrg.value = org
-  // Generate random ticket number (in real app, this would come from backend)
-  const prefix = org.id.toString().padStart(2, '0')
-  const number = Math.floor(Math.random() * 1000)
-    .toString()
-    .padStart(3, '0')
-  ticketNumber.value = `${prefix}-${number}`
-  showModal.value = true
+const selectOrganization = async (service) => {
+  selectedOrg.value = service.organization
+  try {
+    const ticket = await queueStore.requestPublicTicket({ serviceId: service.id })
+    if (
+      ticket &&
+      (ticket.queueNumber || ticket.ticketNumber || (ticket.prefix && ticket.queueNumber))
+    ) {
+      ticketNumber.value =
+        ticket.queueNumber || ticket.ticketNumber || `${ticket.prefix}-${ticket.queueNumber}`
+    } else {
+      ticketNumber.value = `${String(service.prefix || 'TK')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`
+    }
+    showModal.value = true
+    await printTicket(ticket, service)
+  } catch {
+    ticketNumber.value = `${String(service.prefix || 'TK')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`
+    showModal.value = true
+  }
 }
 
 // Close the modal
@@ -243,10 +227,100 @@ const updateDateTime = () => {
 
 let intervalId
 
-onMounted(() => {
+onMounted(async () => {
   updateDateTime()
   intervalId = setInterval(updateDateTime, 1000)
+  connectSocket()
+  isLoading.value = true
+  loadError.value = ''
+  try {
+    await fetchPublicServices({ pagination: false })
+  } catch {
+    loadError.value = 'Failed to load services.'
+  } finally {
+    isLoading.value = false
+  }
 })
+
+const ensureRectaLoaded = () => {
+  return new Promise((resolve, reject) => {
+    if (window.Recta) {
+      resolve()
+      return
+    }
+    const existing = document.getElementById('recta-js')
+    if (existing) {
+      existing.addEventListener('load', () => resolve())
+      existing.addEventListener('error', () => reject(new Error('Recta failed to load')))
+      return
+    }
+    const script = document.createElement('script')
+    script.src = 'https://cdn.jsdelivr.net/npm/recta@latest/dist/recta.js'
+    script.id = 'recta-js'
+    script.async = true
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('Recta failed to load'))
+    document.head.appendChild(script)
+  })
+}
+
+const printTicket = async (ticket, service) => {
+  try {
+    await ensureRectaLoaded()
+    const printerId = import.meta.env.VITE_RECTA_PRINTER_ID || '1234567890'
+    const profile = import.meta.env.VITE_RECTA_PROFILE || '1811'
+    const printer = new window.Recta(printerId, profile)
+    const orgName = ticket?.organizationName || service?.organization?.name || ''
+    const orgFullName = ticket?.organizationFullName || service?.organization?.fullName || ''
+    const queueStr = ticket?.queueNumber || ticketNumber.value
+    const waiting = ticket?.totalWaitingQueue ?? ''
+    const now = new Date()
+    const dateStr = now.toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    await printer.open()
+    printer
+      .align('center')
+      .mode('B', false, true, false, false)
+      .text(orgFullName || orgName)
+      .text('-----------------------------------------------------')
+      .mode()
+      .text('')
+      .mode('B', false, true, false, false)
+      .text('PELAYANAN PADA :')
+      .mode()
+      .mode('B', true, true, false, false)
+      .text(ticket?.serviceName || service?.name || '')
+      .mode()
+      .text('')
+      .mode('B', false, true, false, false)
+      .text('Nomor Antrian :')
+      .mode()
+      .text('')
+      .mode('A', true, true, true, false)
+      .text(queueStr)
+      .mode()
+      .text('')
+      .mode('B', false, true, false, false)
+      .raw('Sisa Antrian :')
+      .text(String(waiting))
+      .text(`${dateStr} - ${timeStr}`)
+      .text('Silahkan Menunggu, Nomor Antrian Anda Akan Dipanggil')
+      .text('Sesuai Urutan. TerimaKasih!')
+      .mode()
+      .text('')
+      .text('')
+      .text('')
+      .text('')
+      .cut(true, 1)
+      .print()
+  } catch (error) {
+    console.error('Error printing ticket:', error)
+  }
+}
 
 onUnmounted(() => {
   if (intervalId) {
@@ -254,6 +328,9 @@ onUnmounted(() => {
   }
   if (scrollTimeout) {
     clearTimeout(scrollTimeout)
+  }
+  if (socket) {
+    socket.disconnect()
   }
 })
 </script>

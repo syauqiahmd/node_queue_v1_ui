@@ -7,6 +7,7 @@ const DEFAULT_PAGE_SIZE = 10;
 export const useServiceStore = defineStore('service', {
   state: () => ({
     services: [],
+    publicServices: [],
     service: null,
     loading: false,
     pagination: {
@@ -55,6 +56,22 @@ export const useServiceStore = defineStore('service', {
         this.service = data.data
       } catch (error) {
         console.error(`Error fetching service with id ${id}:`, error)
+      } finally {
+        this.loading = false
+      }
+    },
+    async fetchPublicServices({ pagination = false } = {}) {
+      this.loading = true
+      try {
+        const headers = { accept: 'application/json' }
+        const url = API_PATHS.SERVICES.GET_ALL_PUBLIC + (pagination ? '' : '')
+        const response = await request.get(url, { headers })
+        const payload = response.data?.data?.data || response.data?.data || []
+        this.publicServices = payload
+      } catch (error) {
+        console.error('Error fetching public services:', error)
+        this.publicServices = []
+        throw error
       } finally {
         this.loading = false
       }

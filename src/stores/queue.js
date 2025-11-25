@@ -9,6 +9,38 @@ export const useQueueStore = defineStore('queue', {
     loading: false,
   }),
   actions: {
+    async requestTicket({ organizationId, serviceId }) {
+      this.loading = true
+      try {
+        const payload = {}
+        if (organizationId) payload.organizationId = organizationId
+        if (serviceId) payload.serviceId = serviceId
+        const { data } = await request.post(API_PATHS.QUEUES.CREATE, payload)
+        return data?.data
+      } catch (error) {
+        console.error('Error requesting ticket:', error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+    async requestPublicTicket({ serviceId }) {
+      this.loading = true
+      try {
+        const headers = { accept: 'application/json', 'Content-Type': 'application/json' }
+        const { data } = await request.post(
+          API_PATHS.TICKETS.CREATE_PUBLIC,
+          { serviceId },
+          { headers },
+        )
+        return data?.data
+      } catch (error) {
+        console.error('Error requesting public ticket:', error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
     async callNextTicket({ serviceId, counterId }) {
       this.loading = true
       try {
@@ -41,7 +73,9 @@ export const useQueueStore = defineStore('queue', {
         if (counterId) {
           params.append('counterId', counterId)
         }
-        const { data } = await request.get(`${API_PATHS.QUEUES.GET_LIST(serviceId)}?${params.toString()}`)
+        const { data } = await request.get(
+          `${API_PATHS.QUEUES.GET_LIST(serviceId)}?${params.toString()}`,
+        )
         this.queueList = data.data
       } catch (error) {
         console.error(`Error fetching queue list for service ${serviceId}:`, error)
@@ -59,7 +93,9 @@ export const useQueueStore = defineStore('queue', {
         if (counterId) {
           params.append('counterId', counterId)
         }
-        const { data } = await request.get(`${API_PATHS.QUEUES.GET_SUMMARY(serviceId)}?${params.toString()}`)
+        const { data } = await request.get(
+          `${API_PATHS.QUEUES.GET_SUMMARY(serviceId)}?${params.toString()}`,
+        )
         this.queueSummary = data.data
       } catch (error) {
         console.error(`Error fetching queue summary for service ${serviceId}:`, error)
@@ -78,5 +114,5 @@ export const useQueueStore = defineStore('queue', {
         this.loading = false
       }
     },
-  }
+  },
 })
