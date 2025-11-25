@@ -13,7 +13,7 @@
     <!-- Title Section -->
     <div class="w-full max-w-none mx-1 md:mx-4 mb-8">
       <h1 class="text-white text-3xl md:text-4xl font-light text-center tracking-wide">
-        Queue Management
+        Monitoring Antrian
       </h1>
     </div>
 
@@ -34,7 +34,7 @@
             <p
               class="text-white/70 text-base md:text-lg font-medium mb-6 uppercase tracking-widest"
             >
-              Current Queue
+              Antrian Saat Ini
             </p>
 
             <!-- Animated Current Queue Number -->
@@ -55,9 +55,9 @@
                   :key="currentQueue.counter"
                   class="bg-gradient-to-r from-blue-500/30 to-cyan-500/30 border border-blue-400/50 px-6 py-3 rounded-full shadow-lg"
                 >
-                  <span class="text-blue-300 text-xl md:text-2xl font-medium">{{
-                    currentQueue.counter
-                  }}</span>
+                  <span class="text-blue-300 text-xl md:text-2xl font-medium">
+                    Loket : {{ currentQueue.counter }}
+                  </span>
                 </div>
               </Transition>
             </div>
@@ -68,7 +68,7 @@
         <div class="lg:col-span-2 space-y-4 md:space-y-6">
           <TransitionGroup name="queue-list" tag="div" class="space-y-4 md:space-y-6">
             <div
-              v-for="(queue, index) in queueHistory"
+              v-for="queue in queueHistory"
               :key="queue.id"
               class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 md:p-8 transition-all duration-300 hover:bg-white/10 hover:scale-105"
             >
@@ -77,7 +77,7 @@
                   <p
                     class="text-white/50 text-sm md:text-base font-medium mb-3 uppercase tracking-wide"
                   >
-                    Queue {{ index + 1 }}
+                    Nomor Antrian
                   </p>
                   <div class="text-emerald-400 text-3xl md:text-4xl font-light mb-2">
                     {{ queue.number }}
@@ -85,7 +85,7 @@
                 </div>
                 <div class="text-right ml-6">
                   <div :class="queue.badgeClass">
-                    <span :class="queue.textClass">{{ queue.counter }}</span>
+                    <span :class="queue.textClass">Loket : {{ queue.counter }}</span>
                   </div>
                 </div>
               </div>
@@ -166,7 +166,7 @@ const connectSocket = () => {
       payload.queueNumber ||
       (payload.prefix && payload.queueNumber ? `${payload.prefix}-${payload.queueNumber}` : '-')
     currentQueue.value = { number: qn, counter: payload.counterNumber || '-' }
-    playAnnouncement(payload.soundUrl)
+    enqueueAnnouncement(payload.soundUrl)
   })
 }
 
@@ -175,7 +175,6 @@ const disconnectSocket = () => {
 }
 
 const bellUrl = '/bell-anounce.m4a'
-let isPlaying = false
 const playAudio = (src) => {
   return new Promise((resolve) => {
     try {
@@ -190,18 +189,30 @@ const playAudio = (src) => {
     }
   })
 }
-const playAnnouncement = async (soundUrl) => {
-  if (isPlaying) return
-  if (!audioEnabled.value) return
-  isPlaying = true
+const audioQueue = []
+let loopActive = false
+const startPlaybackLoop = async () => {
+  if (loopActive) return
+  loopActive = true
   try {
-    await playAudio(bellUrl)
-    if (soundUrl) {
-      await playAudio(soundUrl)
+    while (audioQueue.length) {
+      if (!audioEnabled.value) {
+        await new Promise((r) => setTimeout(r, 300))
+        continue
+      }
+      const item = audioQueue.shift()
+      await playAudio(bellUrl)
+      if (item && item.soundUrl) {
+        await playAudio(item.soundUrl)
+      }
     }
   } finally {
-    isPlaying = false
+    loopActive = false
   }
+}
+const enqueueAnnouncement = (soundUrl) => {
+  audioQueue.push({ soundUrl })
+  startPlaybackLoop()
 }
 
 const enableAudio = async () => {
