@@ -20,10 +20,10 @@ export const API_PATHS = {
   },
   COUNTERS: {
     GET_ALL: '/v1/counters',
-    GET_DETAIL_BY_ID: (id) => `/counters/${id}`,
+    GET_DETAIL_BY_ID: (id) => `/v1/counters/${id}`,
     CREATE: '/v1/counters',
-    UPDATE: (id) => `/counters/${id}`,
-    DELETE: (id) => `/counters/${id}`,
+    UPDATE: (id) => `/v1/counters/${id}`,
+    DELETE: (id) => `/v1/counters/${id}`,
   },
   QUEUES: {
     CALL: '/v1/queues/call',

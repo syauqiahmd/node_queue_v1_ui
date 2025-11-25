@@ -1,4 +1,3 @@
-
 <template>
   <PageTitle :pageTitle="currentPageTitle" />
   <div class="space-y-5 sm:space-y-6">
@@ -25,43 +24,31 @@
                   @click="() => handleSort('counterNumber')"
                 >
                   <div class="flex items-center">
-                    <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Counter Number</p>
+                    <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
+                      Counter Number
+                    </p>
                     <span class="ml-2">
                       <SortArrowIcon v-if="sortBy === 'counterNumber'" :direction="sortOrder" />
                     </span>
                   </div>
                 </th>
-                <th
-                  class="px-5 py-3 text-left w-2/11 sm:px-6 cursor-pointer"
-                  @click="() => handleSort('serviceName')"
-                >
+                <th class="px-5 py-3 text-left w-2/11 sm:px-6 cursor-pointer">
                   <div class="flex items-center">
-                    <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Service</p>
-                    <span class="ml-2">
-                      <SortArrowIcon v-if="sortBy === 'serviceName'" :direction="sortOrder" />
-                    </span>
+                    <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
+                      Service
+                    </p>
                   </div>
                 </th>
-                <th
-                  class="px-5 py-3 text-left w-2/11 sm:px-6 cursor-pointer"
-                  @click="() => handleSort('organizationName')"
-                >
+                <th class="px-5 py-3 text-left w-2/11 sm:px-6 cursor-pointer">
                   <div class="flex items-center">
-                    <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Organization</p>
-                    <span class="ml-2">
-                      <SortArrowIcon v-if="sortBy === 'organizationName'" :direction="sortOrder" />
-                    </span>
+                    <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
+                      Organization
+                    </p>
                   </div>
                 </th>
-                <th
-                  class="px-5 py-3 text-left w-2/11 sm:px-6 cursor-pointer"
-                  @click="() => handleSort('isActive')"
-                >
+                <th class="px-5 py-3 text-left w-2/11 sm:px-6 cursor-pointer">
                   <div class="flex items-center">
                     <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Status</p>
-                    <span class="ml-2">
-                      <SortArrowIcon v-if="sortBy === 'isActive'" :direction="sortOrder" />
-                    </span>
                   </div>
                 </th>
                 <th class="px-5 py-3 text-left w-2/11 sm:px-6">
@@ -85,12 +72,13 @@
                 </td>
                 <td class="px-5 py-4 sm:px-6">
                   <p class="text-gray-500 text-theme-sm dark:text-gray-400">
-                    {{ counter.serviceName }}
+                    {{ counter.service.name }}
                   </p>
                 </td>
                 <td class="px-5 py-4 sm:px-6">
                   <p class="text-gray-500 text-theme-sm dark:text-gray-400">
-                    {{ counter.organizationName }}
+                    {{ counter.service.organization.name }} -
+                    {{ counter.service.organization.fullName }}
                   </p>
                 </td>
                 <td class="px-5 py-4 sm:px-6">
@@ -110,7 +98,8 @@
                 </td>
                 <td class="px-5 py-4 sm:px-6">
                   <div class="flex items-center space-x-2">
-                    <router-link v-if="isAdmin"
+                    <router-link
+                      v-if="isAdmin"
                       :to="`/admin/counters/${counter.id}/edit`"
                       class="flex items-center px-2 py-1 rounded text-sm bg-brand-500 text-white hover:bg-brand-600 focus:outline-none"
                       title="Edit"
@@ -131,7 +120,8 @@
                       </svg>
                       Edit
                     </router-link>
-                    <button v-if="isAdmin"
+                    <button
+                      v-if="isAdmin"
                       @click="() => handleDelete(counter.id)"
                       class="flex items-center px-2 py-1 rounded text-sm bg-error-50 text-error-600 hover:bg-error-100 hover:text-error-700 dark:bg-error-900 dark:text-error-300 dark:hover:bg-error-800 dark:hover:text-error-200"
                       title="Hapus"
