@@ -1,0 +1,80 @@
+export const API_PATHS = {
+  AUTH: {
+    LOGIN: '/v1/public/login',
+    VALIDATE: '/admin/validate'
+  },
+  ORGANIZATIONS: {
+    GET_ALL: '/v1/organizations',
+    GET_DETAIL_BY_ID: (id) => `/organizations/${id}`,
+    CREATE: '/v1/organizations',
+    UPDATE: (id) => `/organizations/${id}`,
+    DELETE: (id) => `/organizations/${id}`
+  },
+  SERVICES: {
+    GET_ALL: '/v1/services',
+    GET_DETAIL_BY_ID: (id) => `/services/${id}`,
+    CREATE: '/v1/services',
+    UPDATE: (id) => `/services/${id}`,
+    DELETE: (id) => `/services/${id}`
+  },
+  COUNTERS: {
+    GET_ALL: '/v1/counters',
+    GET_DETAIL_BY_ID: (id) => `/counters/${id}`,
+    CREATE: '/v1/counters',
+    UPDATE: (id) => `/counters/${id}`,
+    DELETE: (id) => `/counters/${id}`
+  },
+  QUEUES: {
+    CALL: '/v1/queues/call',
+    ACTION: '/v1/queues/action',
+    GET_LIST: (serviceId) => `/queues/${serviceId}`,
+    GET_SUMMARY: (serviceId) => `/queues/${serviceId}/summary`,
+    PRIORITIZE: (queueId) => `/queues/${queueId}/prioritize`
+  },
+  ARTICLES: {
+    GET_ALL: '/v1/articles',
+    GET_ALL_PUBLIC: '/v1/public/articles',
+    GET_POPULAR_PUBLIC: '/v1/public/articles/popular',
+    GET_HEADLINE_PUBLIC: '/v1/public/articles/headline',
+    CREATE: '/v1/articles',
+    GET_DETAIL_BY_ID: (id) => `/articles/${id}`,
+    GET_DETAIL_BY_SLUG: (slug) => `/public/articles/${slug}`,
+    UPDATE: (id) => `/articles/${id}`,
+    DELETE: (id) => `/articles/${id}`,
+    SET_HEADLINE: '/v1/articles/headline'
+  },
+  SLIDERS: {
+    GET_ALL: '/v1/sliders',
+    GET_ALL_PUBLIC: '/v1/public/sliders',
+    GET_DETAIL_BY_ID: (id) => `/sliders/${id}`,
+    CREATE: '/v1/sliders',
+    UPDATE: (id) => `/sliders/${id}`,
+    DELETE: (id) => `/sliders/${id}`
+  },
+  USERS: {
+    GET_ALL: '/v1/users',
+    GET_DETAIL_BY_ID: (id) => `/users/${id}`,
+    CREATE: '/v1/users',
+    UPDATE: (id) => `/users/${id}`,
+    DELETE: (id) => `/users/${id}`
+  },
+  MENUS: {
+    GET_ALL: '/v1/menus',
+    GET_DETAIL_BY_ID: (id) => `/menus/${id}`,
+    CREATE: '/v1/menus',
+    UPDATE: (id) => `/menus/${id}`,
+    DELETE: (id) => `/menus/${id}`,
+    UPDATE_ORDER: '/v1/menus/order'
+  },
+  INTERNAL_SUMMARY: {
+    GET: '/v1/internal/summary'
+  },
+  ADS: {
+    GET_ALL_PUBLIC: '/v1/public/image-content',
+    GET_ALL: '/v1/ads',
+    GET_DETAIL_BY_ID: (id) => `/ads/${id}`,
+    CREATE: '/v1/ads',
+    UPDATE: (id) => `/ads/${id}`,
+    DELETE: (id) => `/ads/${id}`
+  },
+}
