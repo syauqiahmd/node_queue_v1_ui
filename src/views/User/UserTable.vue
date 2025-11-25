@@ -1,4 +1,3 @@
-
 <template>
   <PageTitle :pageTitle="currentPageTitle" />
   <div class="space-y-5 sm:space-y-6">
@@ -25,7 +24,9 @@
                   @click="() => handleSort('userName')"
                 >
                   <div class="flex items-center">
-                    <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Username</p>
+                    <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
+                      Username
+                    </p>
                     <span class="ml-2">
                       <SortArrowIcon v-if="sortBy === 'userName'" :direction="sortOrder" />
                     </span>
@@ -36,7 +37,9 @@
                   @click="() => handleSort('fullName')"
                 >
                   <div class="flex items-center">
-                    <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Full Name</p>
+                    <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
+                      Full Name
+                    </p>
                     <span class="ml-2">
                       <SortArrowIcon v-if="sortBy === 'fullName'" :direction="sortOrder" />
                     </span>
@@ -53,15 +56,9 @@
                     </span>
                   </div>
                 </th>
-                <th
-                  class="px-5 py-3 text-left w-2/11 sm:px-6 cursor-pointer"
-                  @click="() => handleSort('isActive')"
-                >
+                <th class="px-5 py-3 text-left w-2/11 sm:px-6 cursor-pointer">
                   <div class="flex items-center">
                     <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Status</p>
-                    <span class="ml-2">
-                      <SortArrowIcon v-if="sortBy === 'isActive'" :direction="sortOrder" />
-                    </span>
                   </div>
                 </th>
                 <th class="px-5 py-3 text-left w-2/11 sm:px-6">
@@ -110,7 +107,8 @@
                 </td>
                 <td class="px-5 py-4 sm:px-6">
                   <div class="flex items-center space-x-2">
-                    <router-link v-if="isAdmin"
+                    <router-link
+                      v-if="isAdmin"
                       :to="`/admin/users/${user.id}/edit`"
                       class="flex items-center px-2 py-1 rounded text-sm bg-brand-500 text-white hover:bg-brand-600 focus:outline-none"
                       title="Edit"
@@ -131,7 +129,8 @@
                       </svg>
                       Edit
                     </router-link>
-                    <button v-if="isAdmin"
+                    <button
+                      v-if="isAdmin"
                       @click="() => handleDelete(user.id)"
                       class="flex items-center px-2 py-1 rounded text-sm bg-error-50 text-error-600 hover:bg-error-100 hover:text-error-700 dark:bg-error-900 dark:text-error-300 dark:hover:bg-error-800 dark:hover:text-error-200"
                       title="Hapus"

@@ -59,10 +59,10 @@ export const API_PATHS = {
   },
   USERS: {
     GET_ALL: '/v1/users',
-    GET_DETAIL_BY_ID: (id) => `/users/${id}`,
+    GET_DETAIL_BY_ID: (id) => `/v1/users/${id}`,
     CREATE: '/v1/users',
-    UPDATE: (id) => `/users/${id}`,
-    DELETE: (id) => `/users/${id}`,
+    UPDATE: (id) => `/v1/users/${id}`,
+    DELETE: (id) => `/v1/users/${id}`,
   },
   MENUS: {
     GET_ALL: '/v1/menus',
