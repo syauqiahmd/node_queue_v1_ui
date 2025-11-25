@@ -8,17 +8,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      component: () => import('../layouts/PublicLayout.vue'),
-      children: [
-        {
-          path: '',
-          name: 'Monitor Queue',
-          component: () => import('../views/public/HomeView.vue'),
-          meta: {
-            title: 'Monitor Queue',
-          },
-        },
-      ],
+      redirect: '/login',
     },
     {
       path: '/ticket',
@@ -62,6 +52,7 @@ const router = createRouter({
           component: () => import('../views/Organization/OrganizationForm.vue'),
           meta: {
             title: 'Add Organization',
+            requiresAdmin: true,
           },
         },
         {
@@ -70,6 +61,7 @@ const router = createRouter({
           component: () => import('../views/Organization/OrganizationForm.vue'),
           meta: {
             title: 'Edit Organization',
+            requiresAdmin: true,
           },
         },
         {
@@ -86,6 +78,7 @@ const router = createRouter({
           component: () => import('../views/User/UserForm.vue'),
           meta: {
             title: 'Add User',
+            requiresAdmin: true,
           },
         },
         {
@@ -94,6 +87,7 @@ const router = createRouter({
           component: () => import('../views/User/UserForm.vue'),
           meta: {
             title: 'Edit User',
+            requiresAdmin: true,
           },
         },
         {
@@ -110,6 +104,7 @@ const router = createRouter({
           component: () => import('../views/Service/ServiceForm.vue'),
           meta: {
             title: 'Add Service',
+            requiresAdmin: true,
           },
         },
         {
@@ -118,6 +113,7 @@ const router = createRouter({
           component: () => import('../views/Service/ServiceForm.vue'),
           meta: {
             title: 'Edit Service',
+            requiresAdmin: true,
           },
         },
         {
@@ -134,6 +130,7 @@ const router = createRouter({
           component: () => import('../views/Counter/CounterForm.vue'),
           meta: {
             title: 'Add Counter',
+            requiresAdmin: true,
           },
         },
         {
@@ -142,6 +139,7 @@ const router = createRouter({
           component: () => import('../views/Counter/CounterForm.vue'),
           meta: {
             title: 'Edit Counter',
+            requiresAdmin: true,
           },
         },
       ],
@@ -191,6 +189,12 @@ router.beforeEach(async (to, from, next) => {
       authStore.logout()
       next('/login')
     } else {
+      const user = authStore.user
+      const role = user?.role || user?.roleName || null
+      if (to.meta?.requiresAdmin && role !== 'ADMIN') {
+        next('/admin')
+        return
+      }
       next()
     }
   } else {

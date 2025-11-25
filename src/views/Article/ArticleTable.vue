@@ -111,7 +111,7 @@
                 </td>
                 <td class="px-5 py-4 sm:px-6">
                   <div
-                    v-if="article.isHeadline"
+                    v-if="isAdmin && article.isHeadline"
                     @click="() => handleSetHeadline(article.id)"
                     class="cursor-pointer"
                   >
@@ -128,7 +128,11 @@
                       />
                     </svg>
                   </div>
-                  <div v-else @click="() => handleSetHeadline(article.id)" class="cursor-pointer">
+                  <div
+                    v-else-if="isAdmin"
+                    @click="() => handleSetHeadline(article.id)"
+                    class="cursor-pointer"
+                  >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -181,6 +185,7 @@
                 <td class="px-5 py-4 sm:px-6">
                   <div class="flex items-center space-x-2">
                     <router-link
+                      v-if="isAdmin"
                       :to="`/admin/articles/${article.id}/edit`"
                       class="flex items-center px-2 py-1 rounded text-sm bg-brand-500 text-white hover:bg-brand-600 focus:outline-none"
                       title="Edit"
@@ -202,6 +207,7 @@
                       Edit
                     </router-link>
                     <button
+                      v-if="isAdmin"
                       @click="() => handleDelete(article.id)"
                       class="flex items-center px-2 py-1 rounded text-sm bg-error-50 text-error-600 hover:bg-error-100 hover:text-error-700 dark:bg-error-900 dark:text-error-300 dark:hover:bg-error-800 dark:hover:text-error-200"
                       title="Hapus"
@@ -263,17 +269,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import PageTitle from '@/components/common/PageTitle.vue'
 import SortArrowIcon from '@/icons/SortArrowIcon.vue'
 import { useArticleStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { showConfirmationDialog, showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 import { formatDate } from '@/helpers/dayjs'
+import { useAuthStore } from '@/stores'
 
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import PaginationBarAdmin from '@/components/common/PaginationBarAdmin.vue'
 const currentPageTitle = ref('Artikel List')
+const authStore = useAuthStore()
+const isAdmin = computed(() => (authStore.user?.role || authStore.user?.roleName) === 'ADMIN')
 
 const articleStore = useArticleStore()
 const { articles, loading, nextCursor, prevCursor } = storeToRefs(articleStore)

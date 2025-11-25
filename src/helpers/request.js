@@ -32,9 +32,16 @@ request.interceptors.response.use(
     return response
   },
   (error) => {
-    if ((error.response && error.response.status === 404)) {
-      router.push('/not-found-page')
-      return
+    if (error.response && error.response.status === 404) {
+      const message = error.response?.data?.error?.message || 'Resource not found.'
+      const code = error.response?.data?.error?.code || 'Not Found'
+
+      Swal.fire({
+        icon: 'error',
+        title: code,
+        text: message
+      })
+      return Promise.reject(error)
     }
 
     if (error.response && error.response.status === 401) {

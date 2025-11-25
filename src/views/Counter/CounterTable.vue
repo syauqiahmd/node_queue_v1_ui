@@ -6,7 +6,7 @@
       :isTableData="true"
       :searchableList="searchableList"
       @handle-search="handleSearch"
-      :show-add-button="true"
+      :show-add-button="isAdmin"
       add-button-text="Add Counter"
       @add-new="goToCreatePage"
     >
@@ -110,7 +110,7 @@
                 </td>
                 <td class="px-5 py-4 sm:px-6">
                   <div class="flex items-center space-x-2">
-                    <router-link
+                    <router-link v-if="isAdmin"
                       :to="`/admin/counters/${counter.id}/edit`"
                       class="flex items-center px-2 py-1 rounded text-sm bg-brand-500 text-white hover:bg-brand-600 focus:outline-none"
                       title="Edit"
@@ -131,7 +131,7 @@
                       </svg>
                       Edit
                     </router-link>
-                    <button
+                    <button v-if="isAdmin"
                       @click="() => handleDelete(counter.id)"
                       class="flex items-center px-2 py-1 rounded text-sm bg-error-50 text-error-600 hover:bg-error-100 hover:text-error-700 dark:bg-error-900 dark:text-error-300 dark:hover:bg-error-800 dark:hover:text-error-200"
                       title="Hapus"
@@ -171,7 +171,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import PageTitle from '@/components/common/PageTitle.vue'
 import SortArrowIcon from '@/icons/SortArrowIcon.vue'
@@ -180,8 +180,11 @@ import { storeToRefs } from 'pinia'
 import { showConfirmationDialog, showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import PaginationBarAdmin from '@/components/common/PaginationBarAdmin.vue'
+import { useAuthStore } from '@/stores'
 
 const router = useRouter()
+const authStore = useAuthStore()
+const isAdmin = computed(() => (authStore.user?.role || authStore.user?.roleName) === 'ADMIN')
 const currentPageTitle = ref('Counter List')
 const counterStore = useCounterStore()
 const { counters, loading, pagination } = storeToRefs(counterStore)
