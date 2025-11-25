@@ -109,10 +109,20 @@
           <div
             :class="[
               'w-3 h-3 rounded-full animate-pulse',
-              connected ? 'bg-emerald-400' : 'bg-red-500',
+              connectionStatus === 'connected'
+                ? 'bg-emerald-400'
+                : connectionStatus === 'reconnecting'
+                  ? 'bg-amber-400'
+                  : 'bg-red-500',
             ]"
           ></div>
-          <span class="text-sm">{{ connected ? 'Live' : 'Disconnected' }}</span>
+          <span class="text-sm">{{
+            connectionStatus === 'connected'
+              ? 'Live'
+              : connectionStatus === 'reconnecting'
+                ? 'Reconnecting…'
+                : 'Disconnected'
+          }}</span>
         </div>
       </div>
     </div>
@@ -135,6 +145,8 @@ const currentQueue = ref({ number: '-', counter: '-' })
 const queueHistory = ref([])
 const audioEnabled = ref(false)
 const connected = ref(false)
+const connectionStatus = ref('disconnected')
+let reconnectTimer
 
 const badgeStyles = [
   {
@@ -182,12 +194,27 @@ const connectSocket = () => {
   })
   socket.on('connect', () => {
     connected.value = true
+    connectionStatus.value = 'connected'
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
   })
   socket.on('disconnect', () => {
     connected.value = false
+    connectionStatus.value = 'reconnecting'
+    if (reconnectTimer) clearTimeout(reconnectTimer)
+    reconnectTimer = setTimeout(() => {
+      if (!connected.value) connectionStatus.value = 'disconnected'
+    }, 8000)
   })
   socket.on('connect_error', () => {
     connected.value = false
+    connectionStatus.value = 'reconnecting'
+    if (reconnectTimer) clearTimeout(reconnectTimer)
+    reconnectTimer = setTimeout(() => {
+      if (!connected.value) connectionStatus.value = 'disconnected'
+    }, 8000)
   })
 }
 
@@ -341,6 +368,7 @@ onUnmounted(() => {
   disconnectSocket()
   window.removeEventListener('click', unlockHandler)
   window.removeEventListener('touchstart', unlockHandler)
+  if (reconnectTimer) clearTimeout(reconnectTimer)
 })
 </script>
 
