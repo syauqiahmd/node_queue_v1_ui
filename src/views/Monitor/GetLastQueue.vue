@@ -106,8 +106,13 @@
       >
         <span class="font-light">{{ currentDateTime }}</span>
         <div class="flex items-center gap-3">
-          <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-          <span class="text-sm">Live</span>
+          <div
+            :class="[
+              'w-3 h-3 rounded-full animate-pulse',
+              connected ? 'bg-emerald-400' : 'bg-red-500',
+            ]"
+          ></div>
+          <span class="text-sm">{{ connected ? 'Live' : 'Disconnected' }}</span>
         </div>
       </div>
     </div>
@@ -129,6 +134,7 @@ const error = ref('')
 const currentQueue = ref({ number: '-', counter: '-' })
 const queueHistory = ref([])
 const audioEnabled = ref(false)
+const connected = ref(false)
 
 const badgeStyles = [
   {
@@ -174,6 +180,15 @@ const connectSocket = () => {
     currentQueue.value = { number: qn, counter: payload.counterNumber || '-' }
     enqueueAnnouncement(payload.soundUrl)
   })
+  socket.on('connect', () => {
+    connected.value = true
+  })
+  socket.on('disconnect', () => {
+    connected.value = false
+  })
+  socket.on('connect_error', () => {
+    connected.value = false
+  })
 }
 
 const disconnectSocket = () => {
@@ -181,15 +196,21 @@ const disconnectSocket = () => {
 }
 
 const bellUrl = '/bell-anounce.m4a'
+let bellAudio
 const playAudio = (src) => {
   return new Promise((resolve) => {
     try {
-      const a = new Audio(src)
+      const a = src === bellUrl && bellAudio ? bellAudio : new Audio(src)
       a.playsInline = true
+      try {
+        a.currentTime = 0
+      } catch (err) {
+        console.error('Error setting audio current time:', err)
+      }
       a.addEventListener('ended', () => resolve())
       a.addEventListener('error', () => resolve())
       a.play().catch(() => resolve())
-      setTimeout(() => resolve(), 10000)
+      setTimeout(() => resolve(), 60000)
     } catch {
       resolve()
     }
@@ -214,6 +235,7 @@ const startPlaybackLoop = async () => {
     }
   } finally {
     loopActive = false
+    if (audioQueue.length) startPlaybackLoop()
   }
 }
 const enqueueAnnouncement = (soundUrl) => {
@@ -223,12 +245,22 @@ const enqueueAnnouncement = (soundUrl) => {
 
 const enableAudio = async () => {
   try {
-    const a = new Audio(bellUrl)
-    a.muted = true
-    await a.play()
-    a.pause()
+    if (!bellAudio) {
+      bellAudio = document.createElement('audio')
+      bellAudio.src = bellUrl
+      bellAudio.preload = 'auto'
+      try {
+        bellAudio.load()
+      } catch (err) {
+        console.error('Error loading audio:', err)
+      }
+    }
+    bellAudio.muted = true
+    await bellAudio.play()
+    bellAudio.pause()
+    bellAudio.muted = false
   } catch (err) {
-    console.log(err)
+    console.error('Error playing audio:', err)
   }
   audioEnabled.value = true
 }
@@ -291,6 +323,14 @@ onMounted(async () => {
     publicServices.value.forEach((svc) => {
       if (svc?.id) socket.emit('join-service-room', svc.id)
     })
+  }
+  try {
+    bellAudio = document.createElement('audio')
+    bellAudio.src = bellUrl
+    bellAudio.preload = 'auto'
+    bellAudio.load()
+  } catch (err) {
+    console.error('Error loading audio:', err)
   }
   window.addEventListener('click', unlockHandler, { once: true })
   window.addEventListener('touchstart', unlockHandler, { once: true })
