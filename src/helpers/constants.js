@@ -29,6 +29,7 @@ export const API_PATHS = {
     CALL: '/v1/queues/call',
     ACTION: '/v1/queues/action',
     CREATE: '/v1/queues',
+    GET_RECENT_PUBLIC: '/v1/public/queues',
     GET_LIST: (serviceId) => `/queues/${serviceId}`,
     GET_SUMMARY: (serviceId) => `/queues/${serviceId}/summary`,
     PRIORITIZE: (queueId) => `/queues/${queueId}/prioritize`,

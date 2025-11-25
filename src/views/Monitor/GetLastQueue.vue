@@ -2,6 +2,14 @@
   <div
     class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col justify-center items-center p-2 md:p-6"
   >
+    <div v-if="!audioEnabled" class="fixed top-4 right-4 z-50">
+      <button
+        @click="enableAudio"
+        class="inline-flex items-center px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/15 shadow-lg"
+      >
+        Enable Sound
+      </button>
+    </div>
     <!-- Title Section -->
     <div class="w-full max-w-none mx-1 md:mx-4 mb-8">
       <h1 class="text-white text-3xl md:text-4xl font-light text-center tracking-wide">
@@ -11,7 +19,13 @@
 
     <!-- Main Content - Centered -->
     <div class="max-w-none mx-1 md:mx-4 flex-1 flex items-center w-full">
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8 w-full">
+      <div v-if="loading" class="w-full text-center py-12">
+        <span class="text-white/70">Memuat data antrian...</span>
+      </div>
+      <div v-else-if="error" class="w-full text-center py-12">
+        <span class="text-red-400">{{ error }}</span>
+      </div>
+      <div v-else class="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8 w-full">
         <!-- Main Current Queue Section -->
         <div class="lg:col-span-3">
           <div
@@ -96,43 +110,19 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { io } from 'socket.io-client'
+import request from '@/helpers/request'
+import { API_PATHS } from '@/helpers/constants'
+import { useServiceStore } from '@/stores'
+import { storeToRefs } from 'pinia'
 
 const currentDateTime = ref('')
-let queueCounter = 1235
+const loading = ref(false)
+const error = ref('')
 
-// Current queue state
-const currentQueue = ref({
-  number: '#1234',
-  counter: 'Counter 5',
-})
-
-// Queue history with badge styles
-const queueHistory = ref([
-  {
-    id: 1,
-    number: '#1233',
-    counter: 'Counter 4',
-    badgeClass:
-      'bg-gradient-to-r from-purple-500/30 to-pink-500/30 border border-purple-400/50 px-4 py-2 rounded-full shadow-lg',
-    textClass: 'text-purple-300 text-base md:text-lg font-medium',
-  },
-  {
-    id: 2,
-    number: '#1232',
-    counter: 'Counter 3',
-    badgeClass:
-      'bg-gradient-to-r from-orange-500/30 to-amber-500/30 border border-orange-400/50 px-4 py-2 rounded-full shadow-lg',
-    textClass: 'text-orange-300 text-base md:text-lg font-medium',
-  },
-  {
-    id: 3,
-    number: '#1231',
-    counter: 'Counter 2',
-    badgeClass:
-      'bg-gradient-to-r from-rose-500/30 to-red-500/30 border border-rose-400/50 px-4 py-2 rounded-full shadow-lg',
-    textClass: 'text-rose-300 text-base md:text-lg font-medium',
-  },
-])
+const currentQueue = ref({ number: '-', counter: '-' })
+const queueHistory = ref([])
+const audioEnabled = ref(false)
 
 const badgeStyles = [
   {
@@ -152,46 +142,108 @@ const badgeStyles = [
   },
 ]
 
-// Function to update queue (will be triggered by WebSocket in real app)
-const updateQueue = async () => {
-  // Add current queue to history
-  const newHistoryItem = {
-    id: Date.now(),
-    number: currentQueue.value.number,
-    counter: currentQueue.value.counter,
-    ...badgeStyles[0],
-  }
+let socket = null
+const connectSocket = () => {
+  const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  const socketUrl = VITE_API_BASE_URL.replace(/\/api(\/v1)?$/, '')
+  socket = io(socketUrl)
 
-  // Update queue history - shift everything down
-  queueHistory.value.unshift(newHistoryItem)
-
-  // Keep only 3 items in history
-  if (queueHistory.value.length > 3) {
-    queueHistory.value.pop()
-  }
-
-  // Update badge styles for existing items
-  queueHistory.value.forEach((item, index) => {
-    if (index < badgeStyles.length) {
-      Object.assign(item, badgeStyles[index])
+  socket.on('ticket:called', (payload) => {
+    const prev = { ...currentQueue.value }
+    if (prev.number !== '-' && prev.counter !== '-') {
+      queueHistory.value.unshift({
+        id: Date.now(),
+        number: prev.number,
+        counter: prev.counter,
+        ...badgeStyles[0],
+      })
+      if (queueHistory.value.length > 3) queueHistory.value.pop()
+      queueHistory.value.forEach((item, index) => {
+        if (index < badgeStyles.length) Object.assign(item, badgeStyles[index])
+      })
     }
+    const qn =
+      payload.queueNumber ||
+      (payload.prefix && payload.queueNumber ? `${payload.prefix}-${payload.queueNumber}` : '-')
+    currentQueue.value = { number: qn, counter: payload.counterNumber || '-' }
+    playAnnouncement(payload.soundUrl)
   })
-
-  // Wait a bit for the history animation
-  await new Promise((resolve) => setTimeout(resolve, 200))
-
-  // Update current queue
-  const randomCounter = Math.floor(Math.random() * 8) + 1
-  currentQueue.value = {
-    number: `#${queueCounter}`,
-    counter: `Counter ${randomCounter}`,
-  }
-
-  queueCounter++
 }
 
-// Auto-update for demo (simulating WebSocket events)
-let autoUpdateInterval
+const disconnectSocket = () => {
+  if (socket) socket.disconnect()
+}
+
+const bellUrl = '/bell-anounce.m4a'
+let isPlaying = false
+const playAudio = (src) => {
+  return new Promise((resolve) => {
+    try {
+      const a = new Audio(src)
+      a.playsInline = true
+      a.addEventListener('ended', () => resolve())
+      a.addEventListener('error', () => resolve())
+      a.play().catch(() => resolve())
+      setTimeout(() => resolve(), 10000)
+    } catch {
+      resolve()
+    }
+  })
+}
+const playAnnouncement = async (soundUrl) => {
+  if (isPlaying) return
+  if (!audioEnabled.value) return
+  isPlaying = true
+  try {
+    await playAudio(bellUrl)
+    if (soundUrl) {
+      await playAudio(soundUrl)
+    }
+  } finally {
+    isPlaying = false
+  }
+}
+
+const enableAudio = async () => {
+  try {
+    const a = new Audio(bellUrl)
+    a.muted = true
+    await a.play()
+    a.pause()
+  } catch (err) {
+    console.log(err)
+  }
+  audioEnabled.value = true
+}
+
+const fetchQueues = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const headers = { accept: 'application/json' }
+    const { data } = await request.get(API_PATHS.QUEUES.GET_RECENT_PUBLIC, { headers })
+    const arr = Array.isArray(data?.data) ? data.data.slice(0, 4) : []
+    if (arr.length > 0) {
+      currentQueue.value = {
+        number: arr[0].queueNumber || '-',
+        counter: arr[0].counterNumber || '-',
+      }
+      queueHistory.value = arr.slice(1, 4).map((q, i) => ({
+        id: q.id,
+        number: q.queueNumber,
+        counter: q.counterNumber,
+        ...badgeStyles[i % badgeStyles.length],
+      }))
+    } else {
+      currentQueue.value = { number: '-', counter: '-' }
+      queueHistory.value = []
+    }
+  } catch {
+    error.value = 'Failed to load queues.'
+  } finally {
+    loading.value = false
+  }
+}
 
 const updateDateTime = () => {
   const now = new Date()
@@ -206,27 +258,32 @@ const updateDateTime = () => {
 }
 
 let intervalId
+const unlockHandler = () => {
+  if (!audioEnabled.value) enableAudio()
+}
 
-onMounted(() => {
+onMounted(async () => {
   updateDateTime()
   intervalId = setInterval(updateDateTime, 1000)
-
-  // Auto-update every 8 seconds to simulate WebSocket events
-  autoUpdateInterval = setInterval(updateQueue, 8000)
+  connectSocket()
+  await fetchQueues()
+  const serviceStore = useServiceStore()
+  const { publicServices } = storeToRefs(serviceStore)
+  await serviceStore.fetchPublicServices({ pagination: false })
+  if (socket && socket.connected) {
+    publicServices.value.forEach((svc) => {
+      if (svc?.id) socket.emit('join-service-room', svc.id)
+    })
+  }
+  window.addEventListener('click', unlockHandler, { once: true })
+  window.addEventListener('touchstart', unlockHandler, { once: true })
 })
 
 onUnmounted(() => {
-  if (intervalId) {
-    clearInterval(intervalId)
-  }
-  if (autoUpdateInterval) {
-    clearInterval(autoUpdateInterval)
-  }
-})
-
-// Expose updateQueue function for WebSocket integration
-defineExpose({
-  updateQueue,
+  if (intervalId) clearInterval(intervalId)
+  disconnectSocket()
+  window.removeEventListener('click', unlockHandler)
+  window.removeEventListener('touchstart', unlockHandler)
 })
 </script>
 
