@@ -13,7 +13,7 @@
     <!-- Title Section -->
     <div class="w-full max-w-none mx-1 md:mx-4 mb-8">
       <h1 class="text-white text-3xl md:text-4xl font-light text-center tracking-wide">
-        Monitoring Antrian
+        Mall Pelayanan Publik - Kab. Berau
       </h1>
     </div>
 
@@ -25,14 +25,14 @@
       <div v-else-if="error" class="w-full text-center py-12">
         <span class="text-red-400">{{ error }}</span>
       </div>
-      <div v-else class="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8 w-full">
+      <div v-else class="grid grid-cols-1 lg:grid-cols-5 gap-8 md:gap-10 2xl:gap-12 w-full">
         <!-- Main Current Queue Section -->
         <div class="lg:col-span-3">
           <div
-            class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-12 md:p-16 text-center h-full flex flex-col justify-center shadow-2xl transition-all duration-300 hover:bg-white/10"
+            class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-16 md:p-20 2xl:p-24 text-center h-full flex flex-col justify-center shadow-2xl transition-all duration-300 hover:bg-white/10"
           >
             <p
-              class="text-white/70 text-base md:text-lg font-medium mb-6 uppercase tracking-widest"
+              class="text-white/70 text-lg md:text-xl lg:text-2xl 2xl:text-3xl font-semibold mb-6 uppercase tracking-widest"
             >
               Antrian Saat Ini
             </p>
@@ -42,7 +42,7 @@
               <Transition name="slide-up" mode="out-in">
                 <div
                   :key="currentQueue.number"
-                  class="text-emerald-400 text-8xl md:text-9xl lg:text-[12rem] font-extralight transition-all duration-500"
+                  class="text-emerald-400 text-9xl md:text-[10rem] lg:text-[14rem] 2xl:text-[18rem] font-light transition-all duration-500"
                 >
                   {{ currentQueue.number }}
                 </div>
@@ -53,9 +53,11 @@
               <Transition name="fade" mode="out-in">
                 <div
                   :key="currentQueue.counter"
-                  class="bg-gradient-to-r from-blue-500/30 to-cyan-500/30 border border-blue-400/50 px-6 py-3 rounded-full shadow-lg"
+                  class="bg-gradient-to-r from-blue-500/30 to-cyan-500/30 border border-blue-400/50 px-8 py-4 2xl:px-10 2xl:py-5 rounded-full shadow-lg"
                 >
-                  <span class="text-blue-300 text-xl md:text-2xl font-medium">
+                  <span
+                    class="text-blue-300 text-3xl md:text-4xl lg:text-5xl 2xl:text-6xl font-semibold"
+                  >
                     Loket : {{ currentQueue.counter }}
                   </span>
                 </div>
@@ -70,16 +72,18 @@
             <div
               v-for="queue in queueHistory"
               :key="queue.id"
-              class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 md:p-8 transition-all duration-300 hover:bg-white/10 hover:scale-105"
+              class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 md:p-10 2xl:p-12 transition-all duration-300 hover:bg-white/10 hover:scale-105"
             >
               <div class="flex justify-between items-center">
                 <div class="flex-1">
                   <p
-                    class="text-white/50 text-sm md:text-base font-medium mb-3 uppercase tracking-wide"
+                    class="text-white/50 text-base md:text-lg lg:text-xl font-medium mb-3 uppercase tracking-wide"
                   >
                     Nomor Antrian
                   </p>
-                  <div class="text-emerald-400 text-3xl md:text-4xl font-light mb-2">
+                  <div
+                    class="text-emerald-400 text-4xl md:text-5xl lg:text-6xl 2xl:text-7xl font-light mb-2"
+                  >
                     {{ queue.number }}
                   </div>
                 </div>
@@ -97,7 +101,9 @@
 
     <!-- Footer Section -->
     <div class="w-full max-w-none mx-1 md:mx-4 mt-8 md:mt-12">
-      <div class="flex justify-between items-center text-white/60 text-sm md:text-base px-2">
+      <div
+        class="flex justify-between items-center text-white/60 text-base md:text-lg lg:text-xl px-2"
+      >
         <span class="font-light">{{ currentDateTime }}</span>
         <div class="flex items-center gap-3">
           <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
@@ -127,18 +133,18 @@ const audioEnabled = ref(false)
 const badgeStyles = [
   {
     badgeClass:
-      'bg-gradient-to-r from-purple-500/30 to-pink-500/30 border border-purple-400/50 px-4 py-2 rounded-full shadow-lg',
-    textClass: 'text-purple-300 text-base md:text-lg font-medium',
+      'bg-gradient-to-r from-purple-500/30 to-pink-500/30 border border-purple-400/50 px-6 py-3 rounded-full shadow-lg',
+    textClass: 'text-purple-300 text-xl md:text-2xl lg:text-3xl font-medium',
   },
   {
     badgeClass:
-      'bg-gradient-to-r from-orange-500/30 to-amber-500/30 border border-orange-400/50 px-4 py-2 rounded-full shadow-lg',
-    textClass: 'text-orange-300 text-base md:text-lg font-medium',
+      'bg-gradient-to-r from-orange-500/30 to-amber-500/30 border border-orange-400/50 px-6 py-3 rounded-full shadow-lg',
+    textClass: 'text-orange-300 text-xl md:text-2xl lg:text-3xl font-medium',
   },
   {
     badgeClass:
-      'bg-gradient-to-r from-rose-500/30 to-red-500/30 border border-rose-400/50 px-4 py-2 rounded-full shadow-lg',
-    textClass: 'text-rose-300 text-base md:text-lg font-medium',
+      'bg-gradient-to-r from-rose-500/30 to-red-500/30 border border-rose-400/50 px-6 py-3 rounded-full shadow-lg',
+    textClass: 'text-rose-300 text-xl md:text-2xl lg:text-3xl font-medium',
   },
 ]
 
