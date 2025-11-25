@@ -26,7 +26,7 @@
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">Select Service</h3>
         <select
           v-model="selectedServiceId"
-          :disabled="!selectedOrganizationId || serviceStore.loading"
+          :disabled="!selectedOrganizationId"
           class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
         >
           <option :value="null">-- Select Service --</option>
@@ -40,7 +40,7 @@
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">Select Counter</h3>
         <select
           v-model="selectedCounterId"
-          :disabled="!selectedServiceId || counterStore.loading"
+          :disabled="!selectedServiceId"
           class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
         >
           <option :value="null">-- Select Counter --</option>
@@ -65,13 +65,24 @@
     <ComponentCard v-if="selectedServiceId">
       <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">Queue Actions</h3>
       <div class="flex space-x-4">
-        <button
-          @click="callNext"
-          :disabled="!selectedCounterId || queueStore.loading"
-          class="flex items-center justify-center gap-2 h-11 px-6 rounded-lg bg-brand-500 text-white font-medium hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Call Next
-        </button>
+        <div class="relative inline-block">
+          <button
+            @click="callNext"
+            :disabled="!selectedCounterId || queueStore.loading"
+            :class="[
+              'flex items-center justify-center gap-2 h-11 px-6 rounded-lg bg-brand-500 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+              hasNewTickets
+                ? 'hover:bg-brand-600 animate-shake ring-2 ring-red-500'
+                : 'hover:bg-brand-600',
+            ]"
+          >
+            Call Next
+          </button>
+          <span
+            v-if="hasNewTickets"
+            class="absolute -top-1 -right-1 block h-3 w-3 rounded-full bg-red-500 animate-ping"
+          ></span>
+        </div>
       </div>
     </ComponentCard>
 
@@ -188,6 +199,7 @@ import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 import { io } from 'socket.io-client'
 
 const currentPageTitle = ref('Queue Management')
+const hasNewTickets = ref(false)
 
 const queueStore = useQueueStore()
 const { queueList, queueSummary } = storeToRefs(queueStore)
@@ -235,6 +247,9 @@ const connectSocket = () => {
 
   socket.on('ticket:created', (newTicket) => {
     showSuccessToast(`New ticket ${newTicket.prefix}-${newTicket.queueNumber} created!`)
+    if (newTicket.serviceId === selectedServiceId.value) {
+      hasNewTickets.value = true
+    }
     fetchQueueData()
   })
 
@@ -281,9 +296,10 @@ const callNext = async () => {
   }
   try {
     await callNextTicket({ serviceId: selectedServiceId.value, counterId: selectedCounterId.value })
+    hasNewTickets.value = false
     // Data will be updated via WebSocket event
   } catch (error) {
-    console.error('Error calling next ticket:', error)
+    console.error('Error calling next ticket:', error.error.message)
     showErrorToast('Failed to call next ticket.')
   }
 }
@@ -394,6 +410,7 @@ watch(selectedServiceId, async (newServiceId, oldServiceId) => {
     }
   }
   selectedCounterId.value = null
+  hasNewTickets.value = false
   if (newServiceId) {
     await fetchCounters({
       pagination: false,
@@ -413,3 +430,27 @@ watch(selectedCounterId, () => {
   fetchQueueData()
 })
 </script>
+<style scoped>
+@keyframes shake {
+  10%,
+  90% {
+    transform: translateX(-1px);
+  }
+  20%,
+  80% {
+    transform: translateX(2px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-4px);
+  }
+  40%,
+  60% {
+    transform: translateX(4px);
+  }
+}
+.animate-shake {
+  animation: shake 0.6s infinite;
+}
+</style>
