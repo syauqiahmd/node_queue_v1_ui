@@ -16,13 +16,13 @@ const loadCSS = (href, id) => {
   }
 }
 
-// Function to unload CSS
-const unloadCSS = (id) => {
-  const link = document.getElementById(id)
-  if (link) {
-    link.parentNode.removeChild(link)
-  }
-}
+// Function to unload CSS (kept for potential future use)
+// const unloadCSS = (id) => {
+//   const link = document.getElementById(id)
+//   if (link) {
+//     link.parentNode.removeChild(link)
+//   }
+// }
 
 const adminCSS = [
   { href: '/src/assets/adminMain.css', id: 'admin-main-css' },
@@ -31,31 +31,10 @@ const adminCSS = [
   { href: '/node_modules/flatpickr/dist/flatpickr.css', id: 'flatpickr-css' },
 ]
 
-const publicCSS = [
-  { href: '/node_modules/bootstrap/dist/css/bootstrap.min.css', id: 'bootstrap-css' },
-  { href: '/src/assets/css/fontawesome.css', id: 'fontawesome-css' },
-  { href: '/src/assets/css/mobile-menu.css', id: 'mobile-menu-css' },
-  { href: '/src/assets/css/utility.css', id: 'utility-css' },
-  { href: '/src/assets/css/main.css', id: 'main-css' },
-]
+// Load admin CSS globally (public CSS no longer used)
+adminCSS.forEach((css) => loadCSS(css.href, css.id))
 
 router.beforeEach(async (to, from, next) => {
-  const isAdminRoute =
-    to.path.startsWith('/admin') ||
-    to.path.startsWith('/auth') ||
-    to.path.startsWith('/login') ||
-    to.path.startsWith('/ticket') ||
-    to.path.startsWith('/monitor') ||
-    to.name === 'NotFound'
-
-  if (isAdminRoute) {
-    publicCSS.forEach((css) => unloadCSS(css.id))
-    adminCSS.forEach((css) => loadCSS(css.href, css.id))
-  } else {
-    adminCSS.forEach((css) => unloadCSS(css.id))
-    publicCSS.forEach((css) => loadCSS(css.href, css.id))
-  }
-
   if (to.path.startsWith('/admin')) {
     if (!localStorage.getItem('access_token')) {
       Swal.fire({

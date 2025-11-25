@@ -36,10 +36,7 @@
               class="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-white/20 flex items-center justify-center group-hover:border-emerald-400/40 transition-all"
             >
               <img
-                :src="
-                  (svc.organization && (svc.organization.logo || svc.organization.image)) ||
-                  defaultOrgImage
-                "
+                :src="svc.organization.logoUrl || defaultOrgImage"
                 :alt="svc.organization?.name || 'Organization'"
                 class="w-8 h-8 md:w-12 md:h-12 object-contain"
               />
