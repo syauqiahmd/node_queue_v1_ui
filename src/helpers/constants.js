@@ -5,10 +5,10 @@ export const API_PATHS = {
   },
   ORGANIZATIONS: {
     GET_ALL: '/v1/organizations',
-    GET_DETAIL_BY_ID: (id) => `/organizations/${id}`,
+    GET_DETAIL_BY_ID: (id) => `/v1/organizations/${id}`,
     CREATE: '/v1/organizations',
-    UPDATE: (id) => `/organizations/${id}`,
-    DELETE: (id) => `/organizations/${id}`,
+    UPDATE: (id) => `/v1/organizations/${id}`,
+    DELETE: (id) => `/v1/organizations/${id}`,
   },
   SERVICES: {
     GET_ALL: '/v1/services',
