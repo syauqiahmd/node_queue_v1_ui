@@ -131,11 +131,11 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { io } from 'socket.io-client'
+
 import request from '@/helpers/request'
 import { API_PATHS } from '@/helpers/constants'
-import { useServiceStore } from '@/stores'
-import { storeToRefs } from 'pinia'
+// import { useServiceStore } from '@/stores'
+// import { storeToRefs } from 'pinia'
 
 const currentDateTime = ref('')
 const loading = ref(false)
@@ -168,58 +168,69 @@ const badgeStyles = [
 
 let socket = null
 const connectSocket = () => {
-  const SOCKET_BASE = import.meta.env.VITE_SOCKET_BASE_URL
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-  const socketUrl = SOCKET_BASE || API_BASE.replace(/\/api(\/v1)?$/, '')
-  socket = io(socketUrl, { transports: ['websocket', 'polling'] })
-  socket.on('ticket:called', (payload) => {
-    const prev = { ...currentQueue.value }
-    if (prev.number !== '-' && prev.counter !== '-') {
-      queueHistory.value.unshift({
-        id: Date.now(),
-        number: prev.number,
-        counter: prev.counter,
-        ...badgeStyles[0],
-      })
-      if (queueHistory.value.length > 3) queueHistory.value.pop()
-      queueHistory.value.forEach((item, index) => {
-        if (index < badgeStyles.length) Object.assign(item, badgeStyles[index])
-      })
-    }
-    const qn =
-      payload.queueNumber ||
-      (payload.prefix && payload.queueNumber ? `${payload.prefix}-${payload.queueNumber}` : '-')
-    currentQueue.value = { number: qn, counter: payload.counterNumber || '-' }
-    enqueueAnnouncement(payload.soundUrl)
-  })
-  socket.on('connect', () => {
+  const url =
+    import.meta.env.VITE_WS_URL ||
+    (
+      import.meta.env.VITE_SOCKET_BASE_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      'http://localhost:8000'
+    )
+      .replace(/\/api(\/v1)?$/, '')
+      .replace(/^http/, 'ws')
+  let delay = 1000
+  const maxDelay = 10000
+  socket = new WebSocket(url)
+  socket.onopen = () => {
     connected.value = true
     connectionStatus.value = 'connected'
+    delay = 1000
     if (reconnectTimer) {
       clearTimeout(reconnectTimer)
       reconnectTimer = null
     }
-  })
-  socket.on('disconnect', () => {
+  }
+  socket.onclose = () => {
     connected.value = false
     connectionStatus.value = 'reconnecting'
     if (reconnectTimer) clearTimeout(reconnectTimer)
     reconnectTimer = setTimeout(() => {
       if (!connected.value) connectionStatus.value = 'disconnected'
-    }, 8000)
-  })
-  socket.on('connect_error', () => {
-    connected.value = false
-    connectionStatus.value = 'reconnecting'
-    if (reconnectTimer) clearTimeout(reconnectTimer)
-    reconnectTimer = setTimeout(() => {
-      if (!connected.value) connectionStatus.value = 'disconnected'
-    }, 8000)
-  })
+      connectSocket()
+    }, delay)
+    delay = Math.min(delay * 2, maxDelay)
+  }
+  socket.onerror = () => {}
+  socket.onmessage = (ev) => {
+    try {
+      const { event, data } = JSON.parse(ev.data)
+      if (event === 'ticket:called') {
+        const prev = { ...currentQueue.value }
+        if (prev.number !== '-' && prev.counter !== '-') {
+          queueHistory.value.unshift({
+            id: Date.now(),
+            number: prev.number,
+            counter: prev.counter,
+            ...badgeStyles[0],
+          })
+          if (queueHistory.value.length > 3) queueHistory.value.pop()
+          queueHistory.value.forEach((item, index) => {
+            if (index < badgeStyles.length) Object.assign(item, badgeStyles[index])
+          })
+        }
+        const qn =
+          data.queueNumber ||
+          (data.prefix && data.queueNumber ? `${data.prefix}-${data.queueNumber}` : '-')
+        currentQueue.value = { number: qn, counter: data.counterNumber || '-' }
+        enqueueAnnouncement(data.soundUrl)
+      }
+    } catch (err) {
+      console.error('Error processing message:', err)
+    }
+  }
 }
 
 const disconnectSocket = () => {
-  if (socket) socket.disconnect()
+  if (socket) socket.close()
 }
 
 const bellUrl = '/bell-anounce.m4a'
@@ -343,14 +354,10 @@ onMounted(async () => {
   intervalId = setInterval(updateDateTime, 1000)
   connectSocket()
   await fetchQueues()
-  const serviceStore = useServiceStore()
-  const { publicServices } = storeToRefs(serviceStore)
-  await serviceStore.fetchPublicServices({ pagination: false })
-  if (socket && socket.connected) {
-    publicServices.value.forEach((svc) => {
-      if (svc?.id) socket.emit('join-service-room', svc.id)
-    })
-  }
+  // const serviceStore = useServiceStore()
+  // const { publicServices } = storeToRefs(serviceStore)
+  // await serviceStore.fetchPublicServices({ pagination: false })
+
   try {
     bellAudio = document.createElement('audio')
     bellAudio.src = bellUrl

@@ -186,7 +186,6 @@ import { useQueueStore, useServiceStore, useCounterStore, useOrganizationStore }
 import { useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
-import { io } from 'socket.io-client'
 
 const currentPageTitle = ref('Queue Management')
 const hasNewTickets = ref(false)
@@ -222,51 +221,51 @@ const selectedCounterId = ref(null)
 let socket = null
 
 const connectSocket = () => {
-  const SOCKET_BASE = import.meta.env.VITE_SOCKET_BASE_URL
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-  const socketUrl = SOCKET_BASE || API_BASE.replace(/\/api(\/v1)?$/, '')
-  socket = io(socketUrl, { transports: ['websocket', 'polling'] })
-
-  socket.on('connect', () => {
-    console.log('Connected to WebSocket server')
-    if (selectedServiceId.value) {
-      socket.emit('join-service-room', selectedServiceId.value)
-    }
-  })
-
-  socket.on('disconnect', () => {
-    console.log('Disconnected from WebSocket server')
-  })
-
-  socket.on('ticket:created', (newTicket) => {
-    showSuccessToast(`New ticket ${newTicket.prefix}-${newTicket.queueNumber} created!`)
-    if (newTicket.serviceId === selectedServiceId.value) {
-      hasNewTickets.value = true
-    }
-    fetchQueueData()
-  })
-
-  socket.on('ticket:called', (calledTicket) => {
-    showSuccessToast(
-      `Ticket ${calledTicket.prefix}-${calledTicket.queueNumber} called by ${calledTicket.counterNumber}!`,
+  const url =
+    import.meta.env.VITE_WS_URL ||
+    (
+      import.meta.env.VITE_SOCKET_BASE_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      'http://localhost:3000'
     )
-    fetchQueueData()
-  })
-
-  socket.on('ticket:resolved', (resolvedTicket) => {
-    showSuccessToast(`Ticket ${resolvedTicket.id} resolved!`)
-    fetchQueueData()
-  })
-
-  socket.on('ticket:prioritized', (prioritizedTicket) => {
-    showSuccessToast(`Ticket ${prioritizedTicket.id} prioritized!`)
-    fetchQueueData()
-  })
-
-  socket.on('error', (error) => {
-    console.error('WebSocket error:', error)
-    showErrorToast('WebSocket error occurred.')
-  })
+      .replace(/\/api(\/v1)?$/, '')
+      .replace(/^http/, 'ws')
+  let delay = 1000
+  const maxDelay = 10000
+  const open = () => {
+    delay = 1000
+  }
+  const close = () => {
+    setTimeout(connectSocket, delay)
+    delay = Math.min(delay * 2, maxDelay)
+  }
+  socket = new WebSocket(url)
+  socket.onopen = open
+  socket.onclose = close
+  socket.onerror = () => {}
+  socket.onmessage = (ev) => {
+    try {
+      const { event, data } = JSON.parse(ev.data)
+      if (event === 'ticket:created') {
+        showSuccessToast(`New ticket ${data.prefix}-${data.queueNumber} created!`)
+        if (data.serviceId === selectedServiceId.value) hasNewTickets.value = true
+        fetchQueueData()
+      } else if (event === 'ticket:called') {
+        showSuccessToast(
+          `Ticket ${data.prefix}-${data.queueNumber} called by ${data.counterNumber}!`,
+        )
+        fetchQueueData()
+      } else if (event === 'ticket:resolved') {
+        showSuccessToast(`Ticket ${data.id} resolved!`)
+        fetchQueueData()
+      } else if (event === 'ticket:prioritized') {
+        showSuccessToast(`Ticket ${data.id} prioritized!`)
+        fetchQueueData()
+      }
+    } catch (err) {
+      console.error('Error processing message:', err)
+    }
+  }
 }
 
 const disconnectSocket = () => {
@@ -421,15 +420,7 @@ watch(selectedOrganizationId, async (newOrgId) => {
     }
   }
 })
-watch(selectedServiceId, async (newServiceId, oldServiceId) => {
-  if (socket && socket.connected) {
-    if (oldServiceId) {
-      socket.emit('leave-service-room', oldServiceId)
-    }
-    if (newServiceId) {
-      socket.emit('join-service-room', newServiceId)
-    }
-  }
+watch(selectedServiceId, async (newServiceId) => {
   selectedCounterId.value = null
   hasNewTickets.value = false
   if (newServiceId) {
