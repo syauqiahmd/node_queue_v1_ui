@@ -282,9 +282,13 @@ const resolveSoundUrl = (src) => {
     if (/^https?:\/\//.test(src)) {
       try {
         const u = new URL(src)
+        const proxyPath = import.meta.env.VITE_AUDIO_PROXY_PATH
         if (u.hostname.includes('is3.cloudhost.id')) {
           if (import.meta.env.DEV) {
             return `/audio${u.pathname}${u.search || ''}`
+          }
+          if (proxyPath) {
+            return `${proxyPath}${u.pathname}${u.search || ''}`
           }
           return src
         }
