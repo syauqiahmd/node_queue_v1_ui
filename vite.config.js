@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
       'process.env.VITE_SOCKET_BASE_URL': JSON.stringify(env.VITE_SOCKET_BASE_URL),
     },
     server: {
+      cors: true,
       allowedHosts: ['qms-mpp.web.id'],
       proxy: {
         '/api': {
@@ -77,6 +78,19 @@ export default defineConfig(({ mode }) => {
                 proxyReq.removeHeader('Origin')
               } catch (err) {
                 console.error('Error removing Origin header:', err)
+              }
+            })
+            proxy.on('proxyRes', (proxyRes, req, res) => {
+              try {
+                const origin = req.headers.origin || '*'
+                res.setHeader('Access-Control-Allow-Origin', origin)
+                res.setHeader('Access-Control-Allow-Headers', 'Range')
+                res.setHeader(
+                  'Access-Control-Expose-Headers',
+                  'Accept-Ranges, Content-Range, Content-Length',
+                )
+              } catch (err) {
+                console.error('Error setting CORS headers:', err)
               }
             })
           },
