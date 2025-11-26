@@ -124,8 +124,6 @@
                     :class="[
                       'rounded-full px-2 py-0.5 text-theme-xs font-medium capitalize',
                       {
-                        'bg-info-50 text-info-700 dark:bg-info-500/15 dark:text-info-500':
-                          getStatus(ticket) === 'waiting',
                         'bg-warning-50 text-warning-700 dark:bg-warning-500/15 dark:text-warning-500':
                           getStatus(ticket) === 'in-progress',
                         'bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-500':
@@ -186,7 +184,6 @@ import { useQueueStore, useServiceStore, useCounterStore, useOrganizationStore }
 import { useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
-import { io } from 'socket.io-client'
 
 const currentPageTitle = ref('Queue Management')
 const hasNewTickets = ref(false)
@@ -222,56 +219,70 @@ const selectedCounterId = ref(null)
 let socket = null
 
 const connectSocket = () => {
-  const SOCKET_BASE = import.meta.env.VITE_SOCKET_BASE_URL
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-  const socketUrl = SOCKET_BASE || API_BASE.replace(/\/api(\/v1)?$/, '')
-  socket = io(socketUrl, { transports: ['websocket', 'polling'] })
-
-  socket.on('connect', () => {
-    console.log('Connected to WebSocket server')
-    if (selectedServiceId.value) {
-      socket.emit('join-service-room', selectedServiceId.value)
+  const explicitWs = import.meta.env.VITE_WS_URL
+  let url = explicitWs
+  if (!url) {
+    let base =
+      import.meta.env.VITE_SOCKET_BASE_URL || import.meta.env.VITE_API_BASE_URL || location.origin
+    if (!/^https?:\/\//.test(base)) base = `http://${base}`
+    base = base.replace(/\/api(\/v1)?$/, '')
+    const secure = base.startsWith('https')
+    url = base.replace(/^https?/, secure ? 'wss' : 'ws')
+  }
+  if (!url && import.meta.env.DEV) url = 'ws://localhost:8080'
+  console.log('Connecting WebSocket to', url)
+  let delay = 1000
+  const maxDelay = 10000
+  socket = new WebSocket(url)
+  socket.onopen = () => {
+    delay = 1000
+  }
+  socket.onclose = () => {
+    setTimeout(connectSocket, delay)
+    delay = Math.min(delay * 2, maxDelay)
+  }
+  socket.onerror = () => {
+    setTimeout(connectSocket, delay)
+    delay = Math.min(delay * 2, maxDelay)
+  }
+  socket.onmessage = (ev) => {
+    try {
+      const parsed = JSON.parse(ev.data)
+      let event = parsed && parsed.event ? parsed.event : null
+      let data = parsed && parsed.data ? parsed.data : parsed
+      if (event === 'ticket:created') {
+        showSuccessToast(`New ticket ${data.prefix}-${data.queueNumber} created!`)
+        if (data.serviceId === selectedServiceId.value) hasNewTickets.value = true
+        playBeep()
+        fetchQueueData()
+      } else if (event === 'ticket:called') {
+        showSuccessToast(
+          `Ticket ${data.prefix}-${data.queueNumber} called by ${data.counterNumber}!`,
+        )
+        playBeep()
+        fetchQueueData()
+      } else if (event === 'ticket:resolved') {
+        showSuccessToast(`Ticket ${data.id} resolved!`)
+        fetchQueueData()
+      } else if (event === 'ticket:prioritized') {
+        showSuccessToast(`Ticket ${data.id} prioritized!`)
+        fetchQueueData()
+      } else {
+        console.log('WS admin: unhandled event', parsed)
+      }
+    } catch (err) {
+      console.error('Error processing message:', err)
     }
-  })
-
-  socket.on('disconnect', () => {
-    console.log('Disconnected from WebSocket server')
-  })
-
-  socket.on('ticket:created', (newTicket) => {
-    showSuccessToast(`New ticket ${newTicket.prefix}-${newTicket.queueNumber} created!`)
-    if (newTicket.serviceId === selectedServiceId.value) {
-      hasNewTickets.value = true
-    }
-    fetchQueueData()
-  })
-
-  socket.on('ticket:called', (calledTicket) => {
-    showSuccessToast(
-      `Ticket ${calledTicket.prefix}-${calledTicket.queueNumber} called by ${calledTicket.counterNumber}!`,
-    )
-    fetchQueueData()
-  })
-
-  socket.on('ticket:resolved', (resolvedTicket) => {
-    showSuccessToast(`Ticket ${resolvedTicket.id} resolved!`)
-    fetchQueueData()
-  })
-
-  socket.on('ticket:prioritized', (prioritizedTicket) => {
-    showSuccessToast(`Ticket ${prioritizedTicket.id} prioritized!`)
-    fetchQueueData()
-  })
-
-  socket.on('error', (error) => {
-    console.error('WebSocket error:', error)
-    showErrorToast('WebSocket error occurred.')
-  })
+  }
 }
 
 const disconnectSocket = () => {
   if (socket) {
-    socket.disconnect()
+    try {
+      socket.close()
+    } catch (err) {
+      console.error('Error disconnecting socket:', err)
+    }
   }
 }
 
@@ -291,7 +302,7 @@ const callNext = async () => {
   try {
     await callNextTicket({ serviceId: selectedServiceId.value, counterId: selectedCounterId.value })
     hasNewTickets.value = false
-    // Data will be updated via WebSocket event
+    await fetchQueueData()
   } catch (error) {
     console.error('Error calling next ticket:', error.error.message)
     showErrorToast('Failed to call next ticket.')
@@ -309,6 +320,7 @@ const resolveTicketForRow = async (ticket) => {
       queueId: ticket.id,
       counterId: selectedCounterId.value,
     })
+    await fetchQueueData()
   } catch (error) {
     console.error('Error resolving ticket:', error)
     showErrorToast('Failed to resolve ticket.')
@@ -326,6 +338,7 @@ const recallTicket = async (ticket) => {
       queueId: ticket.id,
       counterId: selectedCounterId.value,
     })
+    await fetchQueueData()
   } catch (error) {
     console.error('Error recalling ticket:', error)
     showErrorToast('Failed to recall ticket.')
@@ -421,15 +434,7 @@ watch(selectedOrganizationId, async (newOrgId) => {
     }
   }
 })
-watch(selectedServiceId, async (newServiceId, oldServiceId) => {
-  if (socket && socket.connected) {
-    if (oldServiceId) {
-      socket.emit('leave-service-room', oldServiceId)
-    }
-    if (newServiceId) {
-      socket.emit('join-service-room', newServiceId)
-    }
-  }
+watch(selectedServiceId, async (newServiceId) => {
   selectedCounterId.value = null
   hasNewTickets.value = false
   if (newServiceId) {
