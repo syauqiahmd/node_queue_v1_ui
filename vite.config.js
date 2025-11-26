@@ -16,9 +16,10 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       'process.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL),
+      'process.env.VITE_SOCKET_BASE_URL': JSON.stringify(env.VITE_SOCKET_BASE_URL),
     },
     server: {
-      allowedHosts: ['staging.interview9.id', 'interview9.id'],
+      allowedHosts: ['qms-mpp.web.id'],
       proxy: {
         '/api': {
           target: 'http://localhost:8000/api',

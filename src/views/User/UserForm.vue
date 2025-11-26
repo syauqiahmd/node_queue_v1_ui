@@ -56,7 +56,7 @@
           >
             <option :value="null">-- Select Organization --</option>
             <option v-for="org in organizations" :key="org.id" :value="org.id">
-              {{ org.name }}
+              {{ org.name }} - {{ org.fullName }}
             </option>
           </select>
         </div>

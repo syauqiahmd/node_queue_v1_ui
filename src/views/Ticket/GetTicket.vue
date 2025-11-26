@@ -137,7 +137,6 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useQueueStore, useServiceStore } from '@/stores'
 import { storeToRefs } from 'pinia'
-import { io } from 'socket.io-client'
 import defaultOrgImage from '@/assets/images/default-organization.svg'
 
 const currentDateTime = ref('')
@@ -175,13 +174,6 @@ const { fetchPublicServices } = serviceStore
 const queueStore = useQueueStore()
 const isLoading = ref(false)
 const loadError = ref('')
-
-let socket = null
-const connectSocket = () => {
-  const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-  const socketUrl = VITE_API_BASE_URL.replace(/\/api(\/v1)?$/, '')
-  socket = io(socketUrl)
-}
 
 const selectOrganization = async (service) => {
   selectedOrg.value = service.organization
@@ -227,7 +219,6 @@ let intervalId
 onMounted(async () => {
   updateDateTime()
   intervalId = setInterval(updateDateTime, 1000)
-  connectSocket()
   isLoading.value = true
   loadError.value = ''
   try {
@@ -325,9 +316,6 @@ onUnmounted(() => {
   }
   if (scrollTimeout) {
     clearTimeout(scrollTimeout)
-  }
-  if (socket) {
-    socket.disconnect()
   }
 })
 </script>

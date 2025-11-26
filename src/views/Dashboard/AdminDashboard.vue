@@ -222,9 +222,10 @@ const selectedCounterId = ref(null)
 let socket = null
 
 const connectSocket = () => {
-  const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-  const socketUrl = VITE_API_BASE_URL.replace(/\/api(\/v1)?$/, '')
-  socket = io(socketUrl)
+  const SOCKET_BASE = import.meta.env.VITE_SOCKET_BASE_URL
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+  const socketUrl = SOCKET_BASE || API_BASE.replace(/\/api(\/v1)?$/, '')
+  socket = io(socketUrl, { transports: ['websocket', 'polling'] })
 
   socket.on('connect', () => {
     console.log('Connected to WebSocket server')
