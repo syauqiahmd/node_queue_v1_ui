@@ -168,18 +168,26 @@ const badgeStyles = [
 
 let socket = null
 const connectSocket = () => {
-  const url =
-    import.meta.env.VITE_WS_URL ||
-    (
-      import.meta.env.VITE_SOCKET_BASE_URL ||
-      import.meta.env.VITE_API_BASE_URL ||
-      'http://localhost:8000'
-    )
-      .replace(/\/api(\/v1)?$/, '')
-      .replace(/^http/, 'ws')
+  const explicitWs = import.meta.env.VITE_WS_URL
+  let url = explicitWs
+  if (!url) {
+    let base =
+      import.meta.env.VITE_SOCKET_BASE_URL || import.meta.env.VITE_API_BASE_URL || location.origin
+    if (!/^https?:\/\//.test(base)) base = `http://${base}`
+    base = base.replace(/\/api(\/v1)?$/, '')
+    const secure = base.startsWith('https')
+    url = base.replace(/^https?/, secure ? 'wss' : 'ws')
+  }
+  if (!url && import.meta.env.DEV) url = 'ws://localhost:8080'
+  console.log('Connecting WebSocket to', url)
   let delay = 1000
   const maxDelay = 10000
-  socket = new WebSocket(url)
+  try {
+    socket = new WebSocket(url)
+  } catch {
+    connectionStatus.value = 'disconnected'
+    return
+  }
   socket.onopen = () => {
     connected.value = true
     connectionStatus.value = 'connected'
@@ -188,22 +196,40 @@ const connectSocket = () => {
       clearTimeout(reconnectTimer)
       reconnectTimer = null
     }
+    if (pollId) {
+      clearInterval(pollId)
+      pollId = null
+    }
   }
   socket.onclose = () => {
     connected.value = false
     connectionStatus.value = 'reconnecting'
-    if (reconnectTimer) clearTimeout(reconnectTimer)
-    reconnectTimer = setTimeout(() => {
-      if (!connected.value) connectionStatus.value = 'disconnected'
-      connectSocket()
-    }, delay)
+    setTimeout(connectSocket, delay)
     delay = Math.min(delay * 2, maxDelay)
+    if (!pollId) pollId = setInterval(fetchQueues, 5000)
   }
-  socket.onerror = () => {}
+  socket.onerror = () => {
+    connectionStatus.value = 'reconnecting'
+    setTimeout(connectSocket, delay)
+    delay = Math.min(delay * 2, maxDelay)
+    if (!pollId) pollId = setInterval(fetchQueues, 5000)
+  }
   socket.onmessage = (ev) => {
     try {
-      const { event, data } = JSON.parse(ev.data)
+      const parsed = JSON.parse(ev.data)
+      let event = parsed && parsed.event ? parsed.event : null
+      let data = parsed && parsed.data ? parsed.data : parsed
+      if (!event && data && (data.queueNumber || data.counterNumber || data.prefix)) {
+        event = 'ticket:called'
+      }
       if (event === 'ticket:called') {
+        const key = `${data.prefix || ''}-${data.queueNumber || ''}-${data.counterNumber || ''}`
+        const nowTs = Date.now()
+        if (key && key === lastCallKey && nowTs - lastCallTs < 5000) {
+          return
+        }
+        lastCallKey = key
+        lastCallTs = nowTs
         const prev = { ...currentQueue.value }
         if (prev.number !== '-' && prev.counter !== '-') {
           queueHistory.value.unshift({
@@ -218,36 +244,96 @@ const connectSocket = () => {
           })
         }
         const qn =
-          data.queueNumber ||
-          (data.prefix && data.queueNumber ? `${data.prefix}-${data.queueNumber}` : '-')
+          (data && data.queueNumber) ||
+          (data && data.prefix && data.queueNumber ? `${data.prefix}-${data.queueNumber}` : '-')
         currentQueue.value = { number: qn, counter: data.counterNumber || '-' }
-        enqueueAnnouncement(data.soundUrl)
+        enqueueAnnouncement(
+          data.soundUrl,
+          `${data.prefix || ''}-${data.queueNumber || ''}-${data.counterNumber || ''}`,
+        )
+      } else {
+        console.log('WS monitor: unhandled event', parsed)
       }
-    } catch (err) {
-      console.error('Error processing message:', err)
+    } catch (e) {
+      console.error('Error processing message:', e)
     }
   }
 }
 
 const disconnectSocket = () => {
-  if (socket) socket.close()
+  if (socket) {
+    try {
+      socket.close()
+    } catch (err) {
+      console.error('Error disconnecting socket:', err)
+    }
+  }
 }
 
 const bellUrl = '/bell-anounce.m4a'
 let bellAudio
+let lastAnnounceKey = ''
+let lastAnnounceTs = 0
+let lastCallKey = ''
+let lastCallTs = 0
+const resolveSoundUrl = (src) => {
+  try {
+    if (!src) return null
+    if (/^https?:\/\//.test(src)) {
+      try {
+        const u = new URL(src)
+        if (u.hostname.includes('is3.cloudhost.id')) {
+          if (import.meta.env.DEV) {
+            return `/audio${u.pathname}${u.search || ''}`
+          }
+          return src
+        }
+      } catch {
+        /* noop */
+      }
+      return src
+    }
+    let base = import.meta.env.VITE_API_BASE_URL || location.origin
+    if (!/^https?:\/\//.test(base)) base = `http://${base}`
+    base = base.replace(/\/api(\/v1)?$/, '')
+    if (!src.startsWith('/')) src = `/${src}`
+    return `${base}${src}`
+  } catch {
+    return src
+  }
+}
 const playAudio = (src) => {
   return new Promise((resolve) => {
     try {
       const a = src === bellUrl && bellAudio ? bellAudio : new Audio(src)
       a.playsInline = true
       try {
+        a.crossOrigin = 'anonymous'
+        a.preload = 'auto'
+        a.load()
+      } catch (err) {
+        console.error('Error loading audio:', err)
+      }
+      try {
         a.currentTime = 0
       } catch (err) {
         console.error('Error setting audio current time:', err)
       }
+      try {
+        console.log('Playing audio:', src)
+      } catch {
+        void 0
+      }
       a.addEventListener('ended', () => resolve())
       a.addEventListener('error', () => resolve())
-      a.play().catch(() => resolve())
+      a.play().catch((e) => {
+        try {
+          console.error('Audio play failed:', src, e)
+        } catch {
+          void 0
+        }
+        resolve()
+      })
       setTimeout(() => resolve(), 60000)
     } catch {
       resolve()
@@ -276,8 +362,18 @@ const startPlaybackLoop = async () => {
     if (audioQueue.length) startPlaybackLoop()
   }
 }
-const enqueueAnnouncement = (soundUrl) => {
-  audioQueue.push({ soundUrl })
+const enqueueAnnouncement = (soundUrl, key) => {
+  try {
+    if (key) {
+      const now = Date.now()
+      if (key === lastAnnounceKey && now - lastAnnounceTs < 2000) return
+      lastAnnounceKey = key
+      lastAnnounceTs = now
+    }
+  } catch {
+    void 0
+  }
+  audioQueue.push({ soundUrl: resolveSoundUrl(soundUrl) })
   startPlaybackLoop()
 }
 
@@ -345,6 +441,7 @@ const updateDateTime = () => {
 }
 
 let intervalId
+let pollId
 const unlockHandler = () => {
   if (!audioEnabled.value) enableAudio()
 }
@@ -376,6 +473,7 @@ onUnmounted(() => {
   window.removeEventListener('click', unlockHandler)
   window.removeEventListener('touchstart', unlockHandler)
   if (reconnectTimer) clearTimeout(reconnectTimer)
+  if (pollId) clearInterval(pollId)
 })
 </script>
 

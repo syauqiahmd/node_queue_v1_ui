@@ -22,13 +22,62 @@ export default defineConfig(({ mode }) => {
       allowedHosts: ['qms-mpp.web.id'],
       proxy: {
         '/api': {
-          target: 'http://localhost:8000/api',
+          target: env.VITE_API_BASE_URL || 'http://localhost:8000/api',
           changeOrigin: true,
           ws: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
           configure: (proxy, options) => {
             proxy.on('proxyReq', (proxyReq, req, res) => {
               proxyReq.removeHeader('Origin')
+            })
+          },
+        },
+        '/socket.io': {
+          target:
+            env.VITE_WS_URL ||
+            env.VITE_SOCKET_BASE_URL ||
+            (env.VITE_API_BASE_URL || '').replace(/\/api(\/v1)?$/, ''),
+          changeOrigin: true,
+          ws: true,
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              try {
+                proxyReq.removeHeader('Origin')
+              } catch (err) {
+                console.error('Error removing Origin header:', err)
+              }
+            })
+          },
+        },
+        '/ws': {
+          target:
+            env.VITE_WS_URL ||
+            env.VITE_SOCKET_BASE_URL ||
+            (env.VITE_API_BASE_URL || '').replace(/\/api(\/v1)?$/, ''),
+          changeOrigin: true,
+          ws: true,
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              try {
+                proxyReq.removeHeader('Origin')
+              } catch (err) {
+                console.error('Error removing Origin header:', err)
+              }
+            })
+          },
+        },
+        '/audio': {
+          target: 'https://is3.cloudhost.id',
+          changeOrigin: true,
+          ws: false,
+          rewrite: (path) => path.replace(/^\/audio/, ''),
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              try {
+                proxyReq.removeHeader('Origin')
+              } catch (err) {
+                console.error('Error removing Origin header:', err)
+              }
             })
           },
         },
