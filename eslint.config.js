@@ -25,4 +25,11 @@ export default defineConfig([
   ...pluginVue.configs['flat/essential'],
   ...pluginOxlint.configs['flat/recommended'],
   skipFormatting,
+  {
+    name: 'validation-overrides',
+    files: ['src/validation/*.js'],
+    rules: {
+      'unicorn/no-thenable': 'off',
+    },
+  },
 ])

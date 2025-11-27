@@ -17,7 +17,7 @@
             :key="organization.id"
             :value="organization.id"
           >
-            {{ organization.name }}
+            {{ organization.name }} - {{ organization.fullName }}
           </option>
         </select>
       </ComponentCard>

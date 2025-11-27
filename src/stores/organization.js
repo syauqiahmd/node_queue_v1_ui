@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import request from '../helpers/request'
 import { API_PATHS } from '../helpers/constants'
 
-const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10
 
 export const useOrganizationStore = defineStore('organization', {
   state: () => ({
@@ -13,10 +13,19 @@ export const useOrganizationStore = defineStore('organization', {
       page: 1,
       pageSize: DEFAULT_PAGE_SIZE,
       total: 0,
-    }
+    },
   }),
   actions: {
-    async fetchOrganizations({ page = 1, pageSize = DEFAULT_PAGE_SIZE, search = '', searchBy = 'name', sortBy = 'name', sortOrder = 'asc', isActive = '', pagination = true } = {}) {
+    async fetchOrganizations({
+      page = 1,
+      pageSize = DEFAULT_PAGE_SIZE,
+      search = '',
+      searchBy = 'name',
+      sortBy = 'name',
+      sortOrder = 'asc',
+      isActive = '',
+      pagination = true,
+    } = {}) {
       this.loading = true
       try {
         const params = new URLSearchParams()
@@ -36,8 +45,10 @@ export const useOrganizationStore = defineStore('organization', {
         if (isActive !== '') {
           params.append('isActive', isActive)
         }
-        
-        const response = await request.get(`${API_PATHS.ORGANIZATIONS.GET_ALL}?${params.toString()}`)
+
+        const response = await request.get(
+          `${API_PATHS.ORGANIZATIONS.GET_ALL}?${params.toString()}`,
+        )
         this.organizations = response.data.data.data
         this.pagination.page = page
         this.pagination.pageSize = pageSize
@@ -53,8 +64,7 @@ export const useOrganizationStore = defineStore('organization', {
       try {
         const { data } = await request.get(API_PATHS.ORGANIZATIONS.GET_DETAIL_BY_ID(id))
         this.organization = data.data
-      } catch (error)
-{
+      } catch (error) {
         console.error(`Error fetching organization with id ${id}:`, error)
       } finally {
         this.loading = false
@@ -95,5 +105,5 @@ export const useOrganizationStore = defineStore('organization', {
         this.loading = false
       }
     },
-  }
+  },
 })
