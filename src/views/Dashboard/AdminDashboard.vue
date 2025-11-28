@@ -358,7 +358,7 @@ const getCounterNumber = (counterId) => {
 
 onMounted(async () => {
   if (isAdmin.value) {
-    await fetchOrganizations({ pagination: false, sortBy: 'name', sortOrder: 'asc' })
+    await fetchOrganizations({ pagination: true, pageSize: 25, sortBy: 'name', sortOrder: 'asc' })
     if (organizations.value.length > 0) {
       selectedOrganizationId.value = organizations.value[0].id
       await fetchServices({
