@@ -1,6 +1,6 @@
 <template>
   <div
-    class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col justify-center items-center p-2 md:p-6"
+    class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col justify-center items-center p-2 md:p-6 monitor-root"
   >
     <div v-if="!audioEnabled" class="fixed top-4 right-4 z-50">
       <button
@@ -12,13 +12,15 @@
     </div>
     <!-- Title Section -->
     <div class="w-full max-w-none mx-1 md:mx-4 mb-8">
-      <h1 class="text-white text-3xl md:text-4xl font-light text-center tracking-wide">
+      <h1
+        class="text-white text-3xl md:text-4xl font-light text-center tracking-wide monitor-title"
+      >
         Mall Pelayanan Publik - Kab. Berau
       </h1>
     </div>
 
     <!-- Main Content - Centered -->
-    <div class="max-w-none mx-1 md:mx-4 flex-1 flex items-center w-full">
+    <div class="max-w-none mx-1 md:mx-4 flex-1 flex items-center w-full monitor-content">
       <div v-if="loading" class="w-full text-center py-12">
         <span class="text-white/70">Memuat data antrian...</span>
       </div>
@@ -29,7 +31,7 @@
         <!-- Main Current Queue Section -->
         <div class="lg:col-span-3">
           <div
-            class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-16 md:p-20 2xl:p-24 text-center h-full flex flex-col justify-center shadow-2xl transition-all duration-300 hover:bg-white/10"
+            class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-16 md:p-20 2xl:p-24 text-center h-full flex flex-col justify-center shadow-2xl transition-all duration-300 hover:bg-white/10 monitor-card"
           >
             <p
               class="text-white/70 text-lg md:text-xl lg:text-2xl 2xl:text-3xl font-semibold mb-6 uppercase tracking-widest"
@@ -42,7 +44,7 @@
               <Transition name="slide-up" mode="out-in">
                 <div
                   :key="currentQueue.number"
-                  class="text-emerald-400 text-9xl md:text-[10rem] lg:text-[14rem] 2xl:text-[18rem] font-light transition-all duration-500"
+                  class="text-emerald-400 text-9xl md:text-[10rem] lg:text-[14rem] 2xl:text-[18rem] font-light transition-all duration-500 current-number"
                 >
                   {{ currentQueue.number }}
                 </div>
@@ -53,7 +55,7 @@
               <Transition name="fade" mode="out-in">
                 <div
                   :key="currentQueue.counter"
-                  class="bg-gradient-to-r from-blue-500/30 to-cyan-500/30 border border-blue-400/50 px-8 py-4 2xl:px-10 2xl:py-5 rounded-full shadow-lg"
+                  class="bg-gradient-to-r from-blue-500/30 to-cyan-500/30 border border-blue-400/50 px-8 py-4 2xl:px-10 2xl:py-5 rounded-full shadow-lg counter-badge"
                 >
                   <span
                     class="text-blue-300 text-3xl md:text-4xl lg:text-5xl 2xl:text-6xl font-semibold"
@@ -72,7 +74,7 @@
             <div
               v-for="queue in queueHistory"
               :key="queue.id"
-              class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 md:p-10 2xl:p-12 transition-all duration-300 hover:bg-white/10 hover:scale-105"
+              class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 md:p-10 2xl:p-12 transition-all duration-300 hover:bg-white/10 hover:scale-105 queue-item"
             >
               <div class="flex justify-between items-center">
                 <div class="flex-1">
@@ -82,14 +84,16 @@
                     Nomor Antrian
                   </p>
                   <div
-                    class="text-emerald-400 text-4xl md:text-5xl lg:text-6xl 2xl:text-7xl font-light mb-2"
+                    class="text-emerald-400 text-4xl md:text-5xl lg:text-6xl 2xl:text-7xl font-light mb-2 queue-number"
                   >
                     {{ queue.number }}
                   </div>
                 </div>
                 <div class="text-right ml-6">
                   <div :class="queue.badgeClass">
-                    <span :class="queue.textClass">Loket : {{ queue.counter }}</span>
+                    <span :class="queue.textClass" class="queue-counter"
+                      >Loket : {{ queue.counter }}</span
+                    >
                   </div>
                 </div>
               </div>
@@ -531,5 +535,59 @@ onUnmounted(() => {
   position: absolute;
   right: 0;
   left: 0;
+}
+
+@media (min-width: 2560px) {
+  .monitor-title {
+    font-size: 4rem;
+  }
+  .monitor-content .grid {
+    gap: 3rem;
+  }
+  .monitor-card {
+    padding: 6rem;
+  }
+  .current-number {
+    font-size: clamp(16rem, 12vw, 22rem);
+  }
+  .counter-badge {
+    padding: 2rem 2.5rem;
+  }
+  .queue-item {
+    padding: 3rem;
+  }
+  .queue-number {
+    font-size: 6rem;
+  }
+  .queue-counter {
+    font-size: 4rem;
+  }
+}
+
+@media (min-width: 3840px) {
+  .monitor-title {
+    font-size: 4.5rem;
+  }
+  .monitor-content .grid {
+    gap: 4rem;
+  }
+  .monitor-card {
+    padding: 8rem;
+  }
+  .current-number {
+    font-size: clamp(22rem, 10vw, 28rem);
+  }
+  .counter-badge {
+    padding: 2.5rem 3rem;
+  }
+  .queue-item {
+    padding: 4rem;
+  }
+  .queue-number {
+    font-size: 8rem;
+  }
+  .queue-counter {
+    font-size: 5rem;
+  }
 }
 </style>
