@@ -10,14 +10,16 @@
     </div>
 
     <!-- Organizations Grid with Scrolling -->
-    <div class="flex-1 w-full max-w-6xl mx-auto overflow-hidden">
+    <div class="flex-1 w-full max-w-screen-xl mx-auto overflow-hidden">
       <!-- Scrollable Container -->
       <div
         ref="scrollContainer"
         class="h-[calc(100vh-200px)] md:h-[calc(100vh-220px)] overflow-y-auto pr-1 auto-hide-scrollbar"
         @scroll="handleScroll"
       >
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-4">
+        <div
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 pb-6"
+        >
           <div v-if="isLoading" class="col-span-full text-center py-8">
             <span class="text-white/70">Loading services...</span>
           </div>
@@ -45,11 +47,11 @@
             <!-- Service & Organization Info -->
             <div class="flex-1 min-w-0">
               <h2
-                class="text-white text-lg md:text-xl lg:text-2xl font-light group-hover:text-emerald-400 transition-colors truncate"
+                class="text-white text-lg md:text-xl lg:text-2xl font-light group-hover:text-emerald-400 transition-colors whitespace-normal break-words"
               >
                 {{ svc.organization?.name }}
               </h2>
-              <p class="text-white/60 text-sm md:text-base mt-1 truncate">
+              <p class="text-white/60 text-sm md:text-base mt-1 whitespace-normal break-words">
                 {{ svc.organization?.fullName !== '-' ? svc.organization?.fullName : '' }}
               </p>
             </div>
