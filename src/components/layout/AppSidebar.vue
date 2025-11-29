@@ -184,7 +184,6 @@ import {
   UserGroupIcon,
   BoxCubeIcon,
   TableIcon,
-  ListIcon,
 } from '../../icons'
 import { useSidebar } from '@/composables/useSidebar'
 import { TagIcon } from 'lucide-vue-next'
@@ -225,11 +224,6 @@ const menuGroups = computed(() => {
       icon: TableIcon,
       name: 'Counters',
       path: '/admin/counters',
-    },
-    {
-      icon: ListIcon,
-      name: 'Queue Management',
-      path: '/admin/dashboard',
     },
   ]
 
