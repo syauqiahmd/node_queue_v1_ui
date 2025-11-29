@@ -47,14 +47,10 @@
               <h2
                 class="text-white text-lg md:text-xl lg:text-2xl font-light group-hover:text-emerald-400 transition-colors truncate"
               >
-                {{ svc.name
-                }}<span v-if="svc.prefix" class="text-white/40 ml-2">({{ svc.prefix }})</span>
+                {{ svc.organization?.name }}
               </h2>
               <p class="text-white/60 text-sm md:text-base mt-1 truncate">
-                {{ svc.organization?.name
-                }}<span v-if="svc.organization?.fullName" class="text-white/40">
-                  — {{ svc.organization.fullName }}</span
-                >
+                {{ svc.organization?.fullName !== '-' ? svc.organization?.fullName : '' }}
               </p>
             </div>
 
@@ -102,22 +98,23 @@
         >
           <div class="text-center">
             <h3 class="text-white text-xl md:text-2xl lg:text-3xl font-light mb-6">
-              Your Queue Ticket
+              Nomor Antrian Anda
             </h3>
 
             <div
               class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 md:p-6 mb-6 md:mb-8"
             >
               <p class="text-white/70 text-xs md:text-sm uppercase tracking-widest mb-2">
-                Ticket Number
+                Nomor Antrian
               </p>
               <div class="text-emerald-400 text-4xl md:text-5xl lg:text-6xl font-light mb-4">
                 {{ ticketNumber }}
               </div>
-              <p class="text-white/70 text-xs md:text-sm uppercase tracking-widest mb-2">
-                Organization
-              </p>
-              <div class="text-white text-lg md:text-xl font-light">{{ selectedOrg?.name }}</div>
+              <p class="text-white/70 text-xs md:text-sm uppercase tracking-widest mb-2">Layanan</p>
+              <div class="text-white text-lg md:text-xl font-light">
+                {{ selectedOrg?.name }}
+                {{ selectedOrg?.fullName !== '-' ? ' - ' + selectedOrg?.fullName : '' }}
+              </div>
             </div>
 
             <button
@@ -268,6 +265,9 @@ const printTicket = async (ticket, service) => {
       month: 'long',
       day: 'numeric',
     })
+    const serviceName =
+      service.organization?.name +
+      (service.organization?.fullName !== '-' ? ' - ' + service.organization?.fullName : '')
     const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
     await printer.open()
     printer
@@ -281,7 +281,7 @@ const printTicket = async (ticket, service) => {
       .text('PELAYANAN PADA :')
       .mode()
       .mode('B', true, true, false, false)
-      .text(ticket?.serviceName || service?.name || '')
+      .text(serviceName)
       .mode()
       .text('')
       .mode('B', false, true, false, false)
