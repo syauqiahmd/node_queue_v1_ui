@@ -47,7 +47,7 @@
 <script setup lang="js">
 import SearchBar from '../layout/header/SearchBar.vue'
 
-const props = defineProps({
+defineProps({
   isTableData: {
     type: Boolean,
     required: false,

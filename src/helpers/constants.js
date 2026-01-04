@@ -37,6 +37,9 @@ export const API_PATHS = {
   TICKETS: {
     CREATE_PUBLIC: '/v1/public/tickets',
   },
+  CRON: {
+    TRIGGER: '/v1/cron/trigger',
+  },
   USERS: {
     GET_ALL: '/v1/users',
     GET_DETAIL_BY_ID: (id) => `/v1/users/${id}`,

@@ -142,6 +142,14 @@ const router = createRouter({
             requiresAdmin: true,
           },
         },
+        {
+          path: 'activity',
+          name: 'Activity',
+          component: () => import('../views/Activity/CronActivity.vue'),
+          meta: {
+            title: 'Activity',
+          },
+        },
       ],
     },
     {

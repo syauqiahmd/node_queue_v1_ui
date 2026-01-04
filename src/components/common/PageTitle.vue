@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="js">
-const props = defineProps({
+defineProps({
   pageTitle: {
     type: String,
     required: true,
