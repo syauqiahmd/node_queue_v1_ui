@@ -25,6 +25,9 @@ export const API_PATHS = {
     UPDATE: (id) => `/v1/counters/${id}`,
     DELETE: (id) => `/v1/counters/${id}`,
   },
+  REPORTS: {
+    DAILY_SERVICE_STATS: '/v1/services/report/daily-service-stats',
+  },
   QUEUES: {
     CALL: '/v1/queues/call',
     ACTION: '/v1/queues/action',

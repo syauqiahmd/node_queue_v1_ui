@@ -199,48 +199,23 @@ const menuGroups = computed(() => {
   const { user } = storeToRefs(authStore)
   const userRole = user.value?.role
 
-  const adminItems = [
-    {
-      icon: GridIcon,
-      name: 'Dashboard',
-      path: '/admin/',
-    },
-    {
-      icon: TagIcon,
-      name: 'Organizations',
-      path: '/admin/organizations',
-    },
-    {
-      icon: UserGroupIcon,
-      name: 'Users',
-      path: '/admin/users',
-    },
-    {
-      icon: BoxCubeIcon,
-      name: 'Services',
-      path: '/admin/services',
-    },
-    {
-      icon: TableIcon,
-      name: 'Counters',
-      path: '/admin/counters',
-    },
-  ]
-
-  const userItems = [
-    {
-      icon: GridIcon,
-      name: 'Dashboard',
-      path: '/admin/',
-    },
-  ]
-
-  if (userRole === 'ADMIN') {
-    return [{ title: 'ADMIN MENU', items: adminItems }]
-  } else if (userRole === 'USER') {
-    return [{ title: 'USER MENU', items: userItems }]
+  const menuConfig = {
+    ADMIN: [
+      { icon: GridIcon, name: 'Dashboard', path: '/admin/' },
+      { icon: TagIcon, name: 'Organizations', path: '/admin/organizations' },
+      { icon: UserGroupIcon, name: 'Users', path: '/admin/users' },
+      { icon: BoxCubeIcon, name: 'Services', path: '/admin/services' },
+      { icon: TableIcon, name: 'Counters', path: '/admin/counters' },
+      { icon: TableIcon, name: 'Report', path: '/admin/report' },
+    ],
+    USER: [
+      { icon: GridIcon, name: 'Dashboard', path: '/admin/' },
+      { icon: TableIcon, name: 'Report', path: '/admin/report' },
+    ],
   }
-  return []
+
+  const menuItems = menuConfig[userRole] || []
+  return [{ title: `${userRole} MENU`, items: menuItems }]
 })
 
 const isActive = (path) => route.path === path

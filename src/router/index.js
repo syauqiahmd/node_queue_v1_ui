@@ -150,6 +150,14 @@ const router = createRouter({
             title: 'Activity',
           },
         },
+        {
+          path: 'report',
+          name: 'Report',
+          component: () => import('../views/Report/ReportPage.vue'),
+          meta: {
+            title: 'Report',
+          },
+        },
       ],
     },
     {
