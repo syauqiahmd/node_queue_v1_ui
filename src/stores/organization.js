@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import request from '../helpers/request'
-import { API_PATHS } from '../helpers/constants'
-
-const DEFAULT_PAGE_SIZE = 10
+import { API_PATHS, DEFAULT_PAGE_SIZE } from '../helpers/constants'
 
 export const useOrganizationStore = defineStore('organization', {
   state: () => ({

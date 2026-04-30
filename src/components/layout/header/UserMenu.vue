@@ -45,17 +45,16 @@
 
 <script setup>
 import { ChevronDownIcon, LogoutIcon, UserCircleIcon } from '@/icons'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useAuthStore } from '@/stores'
 
 const dropdownOpen = ref(false)
 const dropdownRef = ref(null)
 const router = useRouter()
+const authStore = useAuthStore()
 
-const user = computed(() => {
-  const userData = localStorage.getItem('user')
-  return userData ? JSON.parse(userData) : null
-})
+const user = computed(() => authStore.user)
 
 const toggleDropdown = () => {
   dropdownOpen.value = !dropdownOpen.value
@@ -65,10 +64,9 @@ const closeDropdown = () => {
   dropdownOpen.value = false
 }
 
-const signOut = () => {
-  localStorage.removeItem('access_token')
-  localStorage.removeItem('user')
+const signOut = async () => {
   closeDropdown()
+  await authStore.logout()
   router.push('/login')
 }
 

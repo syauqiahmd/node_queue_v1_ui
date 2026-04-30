@@ -183,7 +183,6 @@ const connectSocket = () => {
     url = base.replace(/^https?/, secure ? 'wss' : 'ws')
   }
   if (!url && import.meta.env.DEV) url = 'ws://localhost:8080'
-  console.log('Connecting WebSocket to', url)
   let delay = 1000
   const maxDelay = 10000
   try {
@@ -255,8 +254,6 @@ const connectSocket = () => {
           data.soundUrl,
           `${data.prefix || ''}-${data.queueNumber || ''}-${data.counterNumber || ''}`,
         )
-      } else {
-        console.log('WS monitor: unhandled event', parsed)
       }
     } catch (e) {
       console.error('Error processing message:', e)
@@ -326,11 +323,6 @@ const playAudio = (src) => {
         a.currentTime = 0
       } catch (err) {
         console.error('Error setting audio current time:', err)
-      }
-      try {
-        console.log('Playing audio:', src)
-      } catch {
-        void 0
       }
       a.addEventListener('ended', () => resolve())
       a.addEventListener('error', () => resolve())

@@ -1,10 +1,13 @@
+export const DEFAULT_PAGE_SIZE = 10
+
 export const API_PATHS = {
   AUTH: {
     LOGIN: '/v1/public/login',
-    VALIDATE: '/admin/validate',
+    LOGOUT: '/v1/auth/logout',
   },
   ORGANIZATIONS: {
     GET_ALL: '/v1/organizations',
+    GET_ALL_PUBLIC: '/v1/public/organizations',
     GET_DETAIL_BY_ID: (id) => `/v1/organizations/${id}`,
     CREATE: '/v1/organizations',
     UPDATE: (id) => `/v1/organizations/${id}`,
@@ -31,7 +34,6 @@ export const API_PATHS = {
   QUEUES: {
     CALL: '/v1/queues/call',
     ACTION: '/v1/queues/action',
-    CREATE: '/v1/queues',
     GET_RECENT_PUBLIC: '/v1/public/queues',
     GET_LIST: (serviceId) => `/v1/queues/${serviceId}`,
     GET_SUMMARY: (serviceId) => `/v1/queues/${serviceId}/summary`,

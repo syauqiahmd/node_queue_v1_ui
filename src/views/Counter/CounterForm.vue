@@ -85,7 +85,6 @@ import ComponentCard from '@/components/common/ComponentCard.vue'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Add Counter')
-const counterId = ref(null)
 
 const counterStore = useCounterStore()
 const { counter, loading } = storeToRefs(counterStore)
@@ -105,7 +104,7 @@ const formData = reactive({
   isActive: true,
 })
 
-let id = null
+const id = route.params.id
 const selectedOrganizationId = ref(null)
 
 onMounted(async () => {
@@ -116,9 +115,7 @@ onMounted(async () => {
     isActive: true,
     pagination: true,
   })
-  id = route.params.id
   if (id) {
-    counterId.value = id
     currentPageTitle.value = 'Edit Counter'
     await fetchCounter(id)
     formData.counterNumber = counter.value.counterNumber

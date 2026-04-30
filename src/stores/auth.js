@@ -12,7 +12,10 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated() {
       return !!this.accessToken
-    }
+    },
+    isAdmin() {
+      return (this.user?.role || this.user?.roleName) === 'ADMIN'
+    },
   },
   actions: {
     async login(credentials) {
@@ -38,7 +41,13 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
-    logout() {
+    async logout() {
+      if (!this.accessToken) return
+      try {
+        await request.post(API_PATHS.AUTH.LOGOUT)
+      } catch {
+        // proceed with local cleanup regardless
+      }
       this.user = null
       this.accessToken = null
       localStorage.removeItem('access_token')

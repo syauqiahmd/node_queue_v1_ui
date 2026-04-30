@@ -84,7 +84,7 @@ import { storeToRefs } from 'pinia'
 import { showErrorToast, showSuccessToast, showErrorAlert } from '@/helpers/sweetalert'
 
 const authStore = useAuthStore()
-const isAdmin = computed(() => (authStore.user?.role || authStore.user?.roleName) === 'ADMIN')
+const isAdmin = computed(() => authStore.isAdmin)
 
 const organizationStore = useOrganizationStore()
 const { organizations } = storeToRefs(organizationStore)
@@ -129,7 +129,7 @@ onMounted(async () => {
 
 watch(selectedOrganizationId, async (newOrgId) => {
   selectedServiceId.value = null
-  services.value = []
+  serviceStore.$patch({ services: [] })
   if (newOrgId) {
     await fetchServices({
       pagination: false,
@@ -170,4 +170,3 @@ const downloadReport = async () => {
 }
 </script>
 
-<style scoped></style>

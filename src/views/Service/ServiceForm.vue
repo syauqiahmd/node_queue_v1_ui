@@ -80,7 +80,6 @@ import ComponentCard from '@/components/common/ComponentCard.vue'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Add Service')
-const serviceId = ref(null)
 
 const serviceStore = useServiceStore()
 const { service, loading } = storeToRefs(serviceStore)
@@ -97,7 +96,7 @@ const formData = reactive({
   isActive: true,
 })
 
-let id = null
+const id = route.params.id
 
 onMounted(async () => {
   await fetchOrganizations({
@@ -107,9 +106,7 @@ onMounted(async () => {
     isActive: true,
     pagination: true,
   })
-  id = route.params.id
   if (id) {
-    serviceId.value = id
     currentPageTitle.value = 'Edit Service'
     await fetchService(id)
     formData.name = service.value.name

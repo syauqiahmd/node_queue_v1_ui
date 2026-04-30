@@ -44,15 +44,6 @@ export const showConfirmationDialog = async (title = 'Apakah Anda yakin?', text 
   return result.isConfirmed;
 };
 
-export const showSuccessAlert = (title, text) => {
-  Swal.fire({
-    title: title,
-    text: text,
-    icon: 'success',
-    confirmButtonText: 'OK',
-  });
-};
-
 export const showErrorAlert = (title, text) => {
   Swal.fire({
     title: title,

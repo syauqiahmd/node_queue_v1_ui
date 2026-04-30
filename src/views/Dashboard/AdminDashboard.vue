@@ -108,7 +108,7 @@
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr
                 v-for="(ticket, index) in queueList"
-                :key="index"
+                :key="ticket.id"
                 class="border-t border-gray-100 dark:border-gray-800"
               >
                 <td class="px-5 py-4 sm:px-6">
@@ -180,25 +180,18 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import PageTitle from '@/components/common/PageTitle.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { useQueueStore, useServiceStore, useCounterStore, useOrganizationStore } from '@/stores'
-import { useAuthStore } from '@/stores'
+import { useQueueStore, useServiceStore, useCounterStore, useOrganizationStore, useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Queue Management')
 const hasNewTickets = ref(false)
 const authStore = useAuthStore()
-const isAdmin = computed(() => (authStore.user?.role || authStore.user?.roleName) === 'ADMIN')
+const isAdmin = computed(() => authStore.isAdmin)
 
 const queueStore = useQueueStore()
 const { queueList, queueSummary } = storeToRefs(queueStore)
-const {
-  callNextTicket,
-  performTicketAction,
-  fetchQueueList,
-  fetchQueueSummary,
-  // prioritizeTicket: storePrioritizeTicket,
-} = queueStore
+const { callNextTicket, performTicketAction, fetchQueueList, fetchQueueSummary } = queueStore
 
 const organizationStore = useOrganizationStore()
 const { organizations } = storeToRefs(organizationStore)
@@ -230,7 +223,6 @@ const connectSocket = () => {
     url = base.replace(/^https?/, secure ? 'wss' : 'ws')
   }
   if (!url && import.meta.env.DEV) url = 'ws://localhost:8080'
-  console.log('Connecting WebSocket to', url)
   let delay = 1000
   const maxDelay = 10000
   socket = new WebSocket(url)
@@ -267,8 +259,6 @@ const connectSocket = () => {
       } else if (event === 'ticket:prioritized') {
         showSuccessToast(`Ticket ${data.id} prioritized!`)
         fetchQueueData()
-      } else {
-        console.log('WS admin: unhandled event', parsed)
       }
     } catch (err) {
       console.error('Error processing message:', err)
@@ -304,7 +294,7 @@ const callNext = async () => {
     hasNewTickets.value = false
     await fetchQueueData()
   } catch (error) {
-    console.error('Error calling next ticket:', error.error.message)
+    console.error('Error calling next ticket:', error)
     showErrorToast('Failed to call next ticket.')
   }
 }
@@ -419,8 +409,8 @@ onUnmounted(() => {
 watch(selectedOrganizationId, async (newOrgId) => {
   selectedServiceId.value = null
   selectedCounterId.value = null
-  services.value = []
-  counters.value = []
+  serviceStore.$patch({ services: [] })
+  counterStore.$patch({ counters: [] })
   if (newOrgId) {
     await fetchServices({
       pagination: false,

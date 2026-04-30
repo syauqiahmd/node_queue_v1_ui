@@ -9,21 +9,6 @@ export const useQueueStore = defineStore('queue', {
     loading: false,
   }),
   actions: {
-    async requestTicket({ organizationId, serviceId }) {
-      this.loading = true
-      try {
-        const payload = {}
-        if (organizationId) payload.organizationId = organizationId
-        if (serviceId) payload.serviceId = serviceId
-        const { data } = await request.post(API_PATHS.QUEUES.CREATE, payload)
-        return data?.data
-      } catch (error) {
-        console.error('Error requesting ticket:', error)
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
     async requestPublicTicket({ serviceId }) {
       this.loading = true
       try {
