@@ -102,7 +102,6 @@ import ComponentCard from '@/components/common/ComponentCard.vue'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Add User')
-const userId = ref(null)
 
 const userStore = useUserStore()
 const { user, loading } = storeToRefs(userStore)
@@ -121,7 +120,7 @@ const formData = reactive({
   isActive: true,
 })
 
-let id = null
+const id = route.params.id
 
 onMounted(async () => {
   await fetchOrganizations({
@@ -131,9 +130,7 @@ onMounted(async () => {
     isActive: true,
     pagination: true,
   })
-  id = route.params.id
   if (id) {
-    userId.value = id
     currentPageTitle.value = 'Edit User'
     await fetchUser(id)
     formData.userName = user.value.userName
