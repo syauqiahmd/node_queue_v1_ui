@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import request from '../helpers/request'
-import { API_PATHS } from '../helpers/constants'
-
-const DEFAULT_PAGE_SIZE = 10
+import { API_PATHS, DEFAULT_PAGE_SIZE } from '../helpers/constants'
 
 export const useServiceStore = defineStore('service', {
   state: () => ({
@@ -77,7 +75,7 @@ export const useServiceStore = defineStore('service', {
       this.loading = true
       try {
         const headers = { accept: 'application/json' }
-        const url = API_PATHS.SERVICES.GET_ALL_PUBLIC + (pagination ? '' : '')
+        const url = API_PATHS.SERVICES.GET_ALL_PUBLIC
         const response = await request.get(url, { headers })
         const payload = response.data?.data?.data || response.data?.data || []
         this.publicServices = payload

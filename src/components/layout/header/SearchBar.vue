@@ -1,4 +1,3 @@
-'''
 <template>
   <div class="block">
     <form
@@ -104,4 +103,3 @@ watch(searchBy, () => {
   }
 })
 </script>
-''

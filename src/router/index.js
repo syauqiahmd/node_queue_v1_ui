@@ -186,10 +186,8 @@ const router = createRouter({
 })
 
 import { useAuthStore } from '../stores/auth.js'
-import { validateToken } from '../helpers/authApi.js'
 
-export default router
-router.beforeEach(async (to, from, next) => {
+router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   const baseTitle = 'QMS'
   const pageTitle = to.meta.title ? `${baseTitle} - ${to.meta.title}` : `${baseTitle}`
@@ -200,20 +198,15 @@ router.beforeEach(async (to, from, next) => {
       next('/login')
       return
     }
-    const isValid = await validateToken()
-    if (!isValid) {
-      authStore.logout()
-      next('/login')
-    } else {
-      const user = authStore.user
-      const role = user?.role || user?.roleName || null
-      if (to.meta?.requiresAdmin && role !== 'ADMIN') {
-        next('/admin')
-        return
-      }
-      next()
+    const role = authStore.user?.role || authStore.user?.roleName || null
+    if (to.meta?.requiresAdmin && role !== 'ADMIN') {
+      next('/admin')
+      return
     }
+    next()
   } else {
     next()
   }
 })
+
+export default router

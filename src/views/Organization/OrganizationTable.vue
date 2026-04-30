@@ -59,7 +59,7 @@
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr
                 v-for="(organization, index) in organizations"
-                :key="index"
+                :key="organization.id"
                 class="border-t border-gray-100 dark:border-gray-800"
               >
                 <td class="px-5 py-4 sm:px-6">
@@ -159,16 +159,15 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import PageTitle from '@/components/common/PageTitle.vue'
 import SortArrowIcon from '@/icons/SortArrowIcon.vue'
-import { useOrganizationStore } from '@/stores'
+import { useOrganizationStore, useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { showConfirmationDialog, showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import PaginationBarAdmin from '@/components/common/PaginationBarAdmin.vue'
-import { useAuthStore } from '@/stores'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const isAdmin = computed(() => (authStore.user?.role || authStore.user?.roleName) === 'ADMIN')
+const isAdmin = computed(() => authStore.isAdmin)
 const currentPageTitle = ref('Organization List')
 const organizationStore = useOrganizationStore()
 const { organizations, loading, pagination } = storeToRefs(organizationStore)
@@ -237,9 +236,3 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.disabled-link {
-  pointer-events: none;
-  opacity: 0.5;
-}
-</style>

@@ -80,7 +80,6 @@ import ComponentCard from '@/components/common/ComponentCard.vue'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Add Organization')
-const organizationId = ref(null)
 
 const organizationStore = useOrganizationStore()
 const { organization } = storeToRefs(organizationStore)
@@ -93,12 +92,10 @@ const formData = reactive({
   logoUrl: '',
 })
 
-let id = null
+const id = route.params.id
 
 onMounted(async () => {
-  id = route.params.id
   if (id) {
-    organizationId.value = id
     currentPageTitle.value = 'Edit Organization'
     await fetchOrganization(id)
     formData.name = organization.value.name
