@@ -45,15 +45,15 @@
         <div class="relative inline-block">
           <button
             @click="callNext"
-            :disabled="!selectedCounterId || queueStore.loading"
+            :disabled="!selectedCounterId || queueStore.loading || callNextCooldown"
             :class="[
               'flex items-center justify-center gap-2 h-11 px-6 rounded-lg bg-brand-500 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-              hasNewTickets
+              hasNewTickets && !callNextCooldown
                 ? 'hover:bg-brand-600 animate-shake ring-2 ring-red-500'
                 : 'hover:bg-brand-600',
             ]"
           >
-            Call Next
+            {{ callNextCooldown ? 'Please wait...' : queueStore.loading ? 'Calling...' : 'Call Next' }}
           </button>
           <span
             v-if="hasNewTickets"
@@ -134,12 +134,13 @@
                       :disabled="
                         queueStore.loading ||
                         !selectedCounterId ||
-                        getStatus(ticket) !== 'in-progress'
+                        getStatus(ticket) !== 'in-progress' ||
+                        recallingIds.includes(ticket.id)
                       "
                       class="flex items-center px-2 py-1 rounded text-sm bg-brand-500 text-white hover:bg-brand-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Recall"
+                      :title="recallingIds.includes(ticket.id) ? 'Please wait...' : 'Recall'"
                     >
-                      Recall
+                      {{ recallingIds.includes(ticket.id) ? 'Wait...' : 'Recall' }}
                     </button>
                     <button
                       @click="() => resolveTicketForRow(ticket)"
@@ -197,6 +198,10 @@ const { fetchCounters } = counterStore
 const selectedOrganizationId = ref(null)
 const selectedServiceId = ref(null)
 const selectedCounterId = ref(null)
+
+const COOLDOWN_MS = 2000
+const callNextCooldown = ref(false)
+const recallingIds = ref([])
 
 const organizationOptions = computed(() =>
   organizations.value.map((o) => ({
@@ -290,10 +295,13 @@ const fetchQueueData = async () => {
 }
 
 const callNext = async () => {
+  if (callNextCooldown.value) return
   if (!selectedServiceId.value || !selectedCounterId.value) {
     showErrorToast('Please select both a service and a counter.')
     return
   }
+  callNextCooldown.value = true
+  setTimeout(() => { callNextCooldown.value = false }, COOLDOWN_MS)
   try {
     await callNextTicket({ serviceId: selectedServiceId.value, counterId: selectedCounterId.value })
     hasNewTickets.value = false
@@ -323,10 +331,15 @@ const resolveTicketForRow = async (ticket) => {
 }
 
 const recallTicket = async (ticket) => {
+  if (recallingIds.value.includes(ticket.id)) return
   if (!selectedServiceId.value || !selectedCounterId.value) {
     showErrorToast('Please select both a service and a counter.')
     return
   }
+  recallingIds.value = [...recallingIds.value, ticket.id]
+  setTimeout(() => {
+    recallingIds.value = recallingIds.value.filter((id) => id !== ticket.id)
+  }, COOLDOWN_MS)
   try {
     await performTicketAction({
       action: 'retry',
