@@ -279,7 +279,6 @@ const connectSocket = () => {
         playBeep()
         fetchQueueData()
       } else if (event === 'ticket:resolved') {
-        showSuccessToast(`Ticket ${data.id} resolved!`)
         fetchQueueData()
       } else if (event === 'ticket:prioritized') {
         showSuccessToast(`Ticket ${data.id} prioritized!`)
@@ -347,6 +346,7 @@ const resolveTicketForRow = async (ticket) => {
       queueId: ticket.id,
       counterId: selectedCounterId.value,
     })
+    showSuccessToast(`Ticket ${ticket.prefix}-${ticket.queueNumber} resolved!`)
     await fetchQueueData()
   } catch (error) {
     console.error('Error resolving ticket:', error)
