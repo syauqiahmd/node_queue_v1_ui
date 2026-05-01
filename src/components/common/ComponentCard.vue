@@ -7,9 +7,12 @@
   >
     <!-- Card Header -->
     <div v-if="isTableData" class="px-6 py-5">
-      <span>
-        <SearchBar :searchableList="searchableList" @perform-search="handleSearch" />
-      </span>
+      <SearchBar
+        :searchableList="searchableList"
+        :show-add-button="showAddButton"
+        :add-button-text="addButtonText"
+        @perform-search="handleSearch"
+      />
     </div>
     <div v-if="isFormData" class="px-6 py-5">
       <button
@@ -44,26 +47,16 @@
   </div>
 </template>
 
-<script setup lang="js">
+<script setup>
 import SearchBar from '../layout/header/SearchBar.vue'
 
 defineProps({
-  isTableData: {
-    type: Boolean,
-    required: false,
-  },
-  isFormData: {
-    type: Boolean,
-    required: false,
-  },
-  className: {
-    type: String,
-    default: '',
-  },
-  searchableList: {
-    type: Array,
-    default: () => [],
-  },
+  isTableData: { type: Boolean, default: false },
+  isFormData:  { type: Boolean, default: false },
+  className:   { type: String,  default: '' },
+  searchableList: { type: Array, default: () => [] },
+  showAddButton:  { type: Boolean, default: false },
+  addButtonText:  { type: String, default: 'Tambah Data' },
 })
 
 const emit = defineEmits(['handle-search'])

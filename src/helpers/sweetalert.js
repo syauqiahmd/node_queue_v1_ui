@@ -30,10 +30,11 @@ export const showErrorToast = (message) => {
   });
 };
 
-export const showConfirmationDialog = async (title = 'Apakah Anda yakin?', text = 'Anda tidak dapat mengembalikan tindakan ini.') => {
+export const showConfirmationDialog = async (itemName = null) => {
+  const title = itemName ? `Hapus "${itemName}"?` : 'Apakah Anda yakin?'
   const result = await Swal.fire({
     title: title,
-    text: text,
+    text: 'Tindakan ini tidak dapat dibatalkan.',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#3085d6',

@@ -5,61 +5,75 @@
       <div class="space-y-6">
         <div>
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Username
+            Username <span class="text-error-500">*</span>
           </label>
           <input
+            ref="firstInputRef"
             type="text"
             v-model="formData.userName"
-            class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            @input="errors.userName = ''"
+            :class="fieldClass(errors.userName)"
           />
+          <p v-if="errors.userName" class="mt-1 text-sm text-error-500">{{ errors.userName }}</p>
         </div>
+
         <div>
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Full Name
+            Full Name <span class="text-error-500">*</span>
           </label>
           <input
             type="text"
             v-model="formData.fullName"
-            class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            @input="errors.fullName = ''"
+            :class="fieldClass(errors.fullName)"
           />
+          <p v-if="errors.fullName" class="mt-1 text-sm text-error-500">{{ errors.fullName }}</p>
         </div>
+
         <div>
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
             Password
+            <span v-if="!id" class="text-error-500">*</span>
+            <span v-else class="text-gray-400 font-normal text-xs ml-1">(leave blank to keep current)</span>
           </label>
           <input
             type="password"
             v-model="formData.password"
-            class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            @input="errors.password = ''"
+            :class="fieldClass(errors.password)"
           />
+          <p v-if="errors.password" class="mt-1 text-sm text-error-500">{{ errors.password }}</p>
         </div>
+
         <div>
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Role
+            Role <span class="text-error-500">*</span>
           </label>
-          <select
+          <StatusSelect
             v-model="formData.role"
-            class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-          >
-            <option value="ADMIN">Admin</option>
-            <option value="USER">User</option>
-          </select>
+            :options="roleOptions"
+            placeholder="-- Select Role --"
+            :show-status="false"
+            @update:modelValue="errors.organizationId = ''"
+          />
+          <p v-if="errors.role" class="mt-1 text-sm text-error-500">{{ errors.role }}</p>
         </div>
+
         <div v-if="formData.role === 'USER'">
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Organization
+            Organization <span class="text-error-500">*</span>
           </label>
-          <select
+          <StatusSelect
             v-model="formData.organizationId"
+            :options="organizationOptions"
+            placeholder="-- Select Organization --"
             :disabled="loading"
-            class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-          >
-            <option :value="null">-- Select Organization --</option>
-            <option v-for="org in organizations" :key="org.id" :value="org.id">
-              {{ org.name }} - {{ org.fullName }}
-            </option>
-          </select>
+            :show-status="false"
+            @update:modelValue="errors.organizationId = ''"
+          />
+          <p v-if="errors.organizationId" class="mt-1 text-sm text-error-500">{{ errors.organizationId }}</p>
         </div>
+
         <div v-if="id">
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
             Status
@@ -70,27 +84,33 @@
               v-model="formData.isActive"
               class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
             />
-            <label for="isActive" class="ml-2 block text-sm text-gray-900 dark:text-gray-300"
-              >Active</label
-            >
+            <label class="ml-2 block text-sm text-gray-900 dark:text-gray-300">Active</label>
           </div>
         </div>
 
-        <button
-          type="button"
-          :disabled="loading"
-          class="flex items-center justify-center gap-2 h-11 px-6 rounded-lg bg-brand-500 text-white font-medium hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          @click="handleSubmit"
-        >
-          {{ loading ? 'Saving...' : 'Save' }}
-        </button>
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            :disabled="loading"
+            class="flex items-center justify-center gap-2 h-11 px-6 rounded-lg bg-brand-500 text-white font-medium hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="handleSubmit"
+          >
+            {{ loading ? 'Saving...' : 'Save' }}
+          </button>
+          <router-link
+            to="/admin/users"
+            class="flex items-center justify-center gap-2 h-11 px-6 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            Cancel
+          </router-link>
+        </div>
       </div>
     </ComponentCard>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import PageTitle from '@/components/common/PageTitle.vue'
 import { useUserStore, useOrganizationStore } from '@/stores'
 import { storeToRefs } from 'pinia'
@@ -99,9 +119,11 @@ const router = useRouter()
 const route = useRoute()
 
 import ComponentCard from '@/components/common/ComponentCard.vue'
+import StatusSelect from '@/components/common/StatusSelect.vue'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Add User')
+const firstInputRef = ref(null)
 
 const userStore = useUserStore()
 const { user, loading } = storeToRefs(userStore)
@@ -111,6 +133,19 @@ const organizationStore = useOrganizationStore()
 const { organizations } = storeToRefs(organizationStore)
 const { fetchOrganizations } = organizationStore
 
+const roleOptions = [
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'USER',  label: 'User' },
+]
+
+const organizationOptions = computed(() =>
+  organizations.value.map((o) => ({
+    value: o.id,
+    label: `${o.name} - ${o.fullName}`,
+    isActive: o.isActive,
+  })),
+)
+
 const formData = reactive({
   userName: '',
   fullName: '',
@@ -119,6 +154,52 @@ const formData = reactive({
   organizationId: null,
   isActive: true,
 })
+
+const errors = reactive({
+  userName: '',
+  fullName: '',
+  password: '',
+  role: '',
+  organizationId: '',
+})
+
+const baseInputClass = 'dark:bg-dark-900 h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
+const normalClass = 'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800'
+const errorClass = 'border-error-400 focus:border-error-400 focus:ring-error-500/10 dark:border-error-500'
+
+const fieldClass = (error) => [baseInputClass, error ? errorClass : normalClass]
+
+const validate = () => {
+  errors.userName = ''
+  errors.fullName = ''
+  errors.password = ''
+  errors.role = ''
+  errors.organizationId = ''
+  let valid = true
+
+  if (!formData.userName.trim()) {
+    errors.userName = 'Username is required.'
+    valid = false
+  }
+  if (!formData.fullName.trim()) {
+    errors.fullName = 'Full name is required.'
+    valid = false
+  }
+  if (!id && !formData.password.trim()) {
+    errors.password = 'Password is required.'
+    valid = false
+  }
+  if (!formData.role) {
+    errors.role = 'Role is required.'
+    valid = false
+  }
+  if (formData.role === 'USER' && !formData.organizationId) {
+    errors.organizationId = 'Organization is required for USER role.'
+    valid = false
+  }
+
+  return valid
+}
 
 const id = route.params.id
 
@@ -139,15 +220,14 @@ onMounted(async () => {
     formData.organizationId = user.value.organizationId
     formData.isActive = user.value.isActive
   }
+  await nextTick()
+  firstInputRef.value?.focus()
 })
 
 const handleSubmit = async () => {
-  try {
-    if (formData.role === 'USER' && !formData.organizationId) {
-      showErrorToast('Please select an organization for USER role.')
-      return
-    }
+  if (!validate()) return
 
+  try {
     const basePayload = {
       userName: formData.userName,
       fullName: formData.fullName,
@@ -157,10 +237,7 @@ const handleSubmit = async () => {
     if (formData.role === 'USER' && formData.organizationId) {
       basePayload.organizationId = formData.organizationId
     }
-    if (!id && formData.password) {
-      basePayload.password = formData.password
-    }
-    if (id && formData.password) {
+    if (formData.password) {
       basePayload.password = formData.password
     }
 

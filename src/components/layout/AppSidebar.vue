@@ -183,7 +183,8 @@ import {
   HorizontalDots,
   UserGroupIcon,
   BoxCubeIcon,
-  TableIcon,
+  ListIcon,
+  BarChartIcon,
 } from '../../icons'
 import { useSidebar } from '@/composables/useSidebar'
 import { TagIcon } from 'lucide-vue-next'
@@ -201,24 +202,46 @@ const menuGroups = computed(() => {
 
   const menuConfig = {
     ADMIN: [
-      { icon: GridIcon, name: 'Dashboard', path: '/admin/' },
-      { icon: TagIcon, name: 'Organizations', path: '/admin/organizations' },
-      { icon: UserGroupIcon, name: 'Users', path: '/admin/users' },
-      { icon: BoxCubeIcon, name: 'Services', path: '/admin/services' },
-      { icon: TableIcon, name: 'Counters', path: '/admin/counters' },
-      { icon: TableIcon, name: 'Report', path: '/admin/report' },
+      {
+        title: 'Main',
+        items: [
+          { icon: GridIcon, name: 'Dashboard', path: '/admin/' },
+        ],
+      },
+      {
+        title: 'Master Data',
+        items: [
+          { icon: TagIcon,       name: 'Organizations', path: '/admin/organizations' },
+          { icon: BoxCubeIcon,   name: 'Services',      path: '/admin/services' },
+          { icon: ListIcon,      name: 'Counters',      path: '/admin/counters' },
+        ],
+      },
+      {
+        title: 'Management',
+        items: [
+          { icon: UserGroupIcon, name: 'Users',   path: '/admin/users' },
+          { icon: BarChartIcon,  name: 'Report',  path: '/admin/report' },
+        ],
+      },
     ],
     USER: [
-      { icon: GridIcon, name: 'Dashboard', path: '/admin/' },
-      { icon: TableIcon, name: 'Report', path: '/admin/report' },
+      {
+        title: 'Menu',
+        items: [
+          { icon: GridIcon,     name: 'Dashboard', path: '/admin/' },
+          { icon: BarChartIcon, name: 'Report',    path: '/admin/report' },
+        ],
+      },
     ],
   }
 
-  const menuItems = menuConfig[userRole] || []
-  return [{ title: `${userRole} MENU`, items: menuItems }]
+  return menuConfig[userRole] || []
 })
 
-const isActive = (path) => route.path === path
+const isActive = (path) => {
+  if (path === '/admin/') return route.path === '/admin' || route.path === '/admin/'
+  return route.path === path || route.path.startsWith(path + '/')
+}
 
 const toggleSubmenu = (groupIndex, itemIndex) => {
   const key = `${groupIndex}-${itemIndex}`
