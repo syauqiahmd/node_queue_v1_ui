@@ -61,8 +61,8 @@ request.interceptors.response.use(
         icon: 'error',
         title: errorTitle,
         text: errorMessage
-      }).then(() => {
-        authStore.logout()
+      }).then(async () => {
+        await authStore.logout()
         router.push('/login')
       })
       return Promise.reject(error)

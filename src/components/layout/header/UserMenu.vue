@@ -28,16 +28,15 @@
           {{ user?.organization?.name || 'N/A' }}
         </span>
       </div>
-      <router-link
-        to="/login"
+      <button
         @click="signOut"
-        class="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+        class="w-full flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
       >
         <LogoutIcon
           class="text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300"
         />
         Sign out
-      </router-link>
+      </button>
     </div>
     <!-- Dropdown End -->
   </div>
@@ -48,6 +47,7 @@ import { ChevronDownIcon, LogoutIcon, UserCircleIcon } from '@/icons'
 import { useRouter } from 'vue-router'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '@/stores'
+import Swal from 'sweetalert2'
 
 const dropdownOpen = ref(false)
 const dropdownRef = ref(null)
@@ -66,6 +66,18 @@ const closeDropdown = () => {
 
 const signOut = async () => {
   closeDropdown()
+  const { isConfirmed } = await Swal.fire({
+    title: 'Sign out?',
+    text: 'You will need to sign in again to access the admin panel.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#465fff',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Yes, sign out',
+    cancelButtonText: 'Cancel',
+    reverseButtons: true,
+  })
+  if (!isConfirmed) return
   await authStore.logout()
   router.push('/login')
 }

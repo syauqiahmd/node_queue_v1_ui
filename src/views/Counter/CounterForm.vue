@@ -28,34 +28,28 @@
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
             Organization <span class="text-error-500">*</span>
           </label>
-          <select
+          <StatusSelect
             v-model="selectedOrganizationId"
+            :options="organizationOptions"
+            placeholder="-- Select Organization --"
             :disabled="loading"
-            @change="errors.serviceId = ''"
-            :class="[fieldClass(''), !selectedOrganizationId ? 'text-gray-400 dark:text-gray-500' : '']"
-          >
-            <option :value="null">-- Select Organization --</option>
-            <option v-for="org in organizations" :key="org.id" :value="org.id">
-              {{ org.name }} - {{ org.fullName }}
-            </option>
-          </select>
+            :show-status="false"
+            @update:modelValue="errors.serviceId = ''"
+          />
         </div>
 
         <div>
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
             Service <span class="text-error-500">*</span>
           </label>
-          <select
+          <StatusSelect
             v-model="formData.serviceId"
+            :options="serviceOptions"
+            placeholder="-- Select Service --"
             :disabled="!selectedOrganizationId || loading"
-            @change="errors.serviceId = ''"
-            :class="[fieldClass(errors.serviceId), !formData.serviceId ? 'text-gray-400 dark:text-gray-500' : '']"
-          >
-            <option :value="null">-- Select Service --</option>
-            <option v-for="service in services" :key="service.id" :value="service.id">
-              {{ service.name }}
-            </option>
-          </select>
+            :show-status="false"
+            @update:modelValue="errors.serviceId = ''"
+          />
           <p v-if="errors.serviceId" class="mt-1 text-sm text-error-500">{{ errors.serviceId }}</p>
         </div>
 
@@ -95,7 +89,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import PageTitle from '@/components/common/PageTitle.vue'
 import { useCounterStore, useServiceStore, useOrganizationStore } from '@/stores'
 import { storeToRefs } from 'pinia'
@@ -104,6 +98,7 @@ const router = useRouter()
 const route = useRoute()
 
 import ComponentCard from '@/components/common/ComponentCard.vue'
+import StatusSelect from '@/components/common/StatusSelect.vue'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Add Counter')
@@ -120,6 +115,22 @@ const { fetchServices, fetchService } = serviceStore
 const organizationStore = useOrganizationStore()
 const { organizations } = storeToRefs(organizationStore)
 const { fetchOrganizations } = organizationStore
+
+const organizationOptions = computed(() =>
+  organizations.value.map((o) => ({
+    value: o.id,
+    label: `${o.name} - ${o.fullName}`,
+    isActive: o.isActive,
+  })),
+)
+
+const serviceOptions = computed(() =>
+  services.value.map((s) => ({
+    value: s.id,
+    label: s.name,
+    isActive: s.isActive,
+  })),
+)
 
 const formData = reactive({
   counterNumber: '',

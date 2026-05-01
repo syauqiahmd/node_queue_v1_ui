@@ -17,22 +17,30 @@
             <div>
               <form @submit.prevent="handleSubmit">
                 <div class="space-y-5">
-                  <!-- Email -->
+                  <!-- Username -->
                   <div>
                     <label
-                      for="email"
+                      for="username"
                       class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                     >
                       Username<span class="text-error-500">*</span>
                     </label>
                     <input
                       v-model="userName"
+                      @input="errors.userName = ''"
                       type="text"
                       id="username"
                       name="username"
                       placeholder="username"
-                      class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                      autofocus
+                      :class="[
+                        'dark:bg-dark-900 h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30',
+                        errors.userName
+                          ? 'border-error-400 focus:border-error-400 focus:ring-error-500/10 dark:border-error-500'
+                          : 'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800',
+                      ]"
                     />
+                    <p v-if="errors.userName" class="mt-1 text-sm text-error-500">{{ errors.userName }}</p>
                   </div>
                   <!-- Password -->
                   <div>
@@ -48,7 +56,13 @@
                         :type="showPassword ? 'text' : 'password'"
                         id="password"
                         placeholder="Enter your password"
-                        class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                        @input="errors.password = ''"
+                        :class="[
+                          'dark:bg-dark-900 h-11 w-full rounded-lg border bg-transparent py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30',
+                          errors.password
+                            ? 'border-error-400 focus:border-error-400 focus:ring-error-500/10 dark:border-error-500'
+                            : 'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800',
+                        ]"
                       />
                       <span
                         @click="togglePasswordVisibility"
@@ -89,13 +103,29 @@
                       </span>
                     </div>
                   </div>
+                  <!-- Password error -->
+                  <p v-if="errors.password" class="-mt-3 text-sm text-error-500">{{ errors.password }}</p>
+
+                  <!-- API error -->
+                  <div
+                    v-if="authStore.error"
+                    class="rounded-lg bg-error-50 dark:bg-error-500/10 border border-error-200 dark:border-error-500/20 px-4 py-3 text-sm text-error-600 dark:text-error-400"
+                  >
+                    {{ authStore.error }}
+                  </div>
+
                   <!-- Button -->
                   <div>
                     <button
                       type="submit"
-                      class="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+                      :disabled="authStore.loading"
+                      class="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Sign In
+                      <svg v-if="authStore.loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                      </svg>
+                      {{ authStore.loading ? 'Signing in...' : 'Sign In' }}
                     </button>
                   </div>
                 </div>
@@ -120,27 +150,41 @@
   </div>
 </template>
 
-<script setup lang="js">
-import { ref } from 'vue'
+<script setup>
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import { useAuthStore } from '@/stores'
+import { showSuccessToast } from '@/helpers/sweetalert'
 
 const userName = ref('')
 const password = ref('')
 const showPassword = ref(false)
+const errors = reactive({ userName: '', password: '' })
 
 const router = useRouter()
 const authStore = useAuthStore()
-const { login } = authStore
 
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
 }
 
+const validate = () => {
+  errors.userName = ''
+  errors.password = ''
+  let valid = true
+  if (!userName.value.trim()) { errors.userName = 'Username is required.'; valid = false }
+  if (!password.value.trim()) { errors.password = 'Password is required.'; valid = false }
+  return valid
+}
+
 const handleSubmit = async () => {
-  const success = await login({ userName: userName.value, password: password.value })
+  if (!validate()) return
+  authStore.error = null
+  const success = await authStore.login({ userName: userName.value, password: password.value })
   if (success) {
+    const name = authStore.user?.fullName || authStore.user?.userName || 'there'
+    showSuccessToast(`Welcome back, ${name}! 👋`)
     router.push('/admin')
   }
 }

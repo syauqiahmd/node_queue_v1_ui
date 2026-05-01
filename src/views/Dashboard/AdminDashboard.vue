@@ -26,16 +26,13 @@
 
       <ComponentCard>
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">Select Counter</h3>
-        <select
+        <StatusSelect
           v-model="selectedCounterId"
+          :options="counterOptions"
+          placeholder="-- Select Counter --"
           :disabled="!selectedServiceId"
-          class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-        >
-          <option :value="null">-- Select Counter --</option>
-          <option v-for="counter in counters" :key="counter.id" :value="counter.id">
-            {{ counter.counterNumber }}
-          </option>
-        </select>
+          :show-status="false"
+        />
       </ComponentCard>
     </div>
 
@@ -94,7 +91,13 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-if="!queueStore.loading && queueList.length === 0">
+                <td colspan="5" class="px-5 py-10 text-center">
+                  <p class="text-sm text-gray-400 dark:text-gray-500">No active tickets in queue.</p>
+                </td>
+              </tr>
               <tr
+                v-else
                 v-for="(ticket, index) in queueList"
                 :key="ticket.id"
                 class="border-t border-gray-100 dark:border-gray-800"
@@ -147,12 +150,13 @@
                       :disabled="
                         queueStore.loading ||
                         !selectedCounterId ||
-                        getStatus(ticket) !== 'in-progress'
+                        getStatus(ticket) !== 'in-progress' ||
+                        resolvingIds.includes(ticket.id)
                       "
                       class="flex items-center px-2 py-1 rounded text-sm bg-success-500 text-white hover:bg-success-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Resolve"
+                      :title="resolvingIds.includes(ticket.id) ? 'Please wait...' : 'Resolve'"
                     >
-                      Resolve
+                      {{ resolvingIds.includes(ticket.id) ? 'Wait...' : 'Resolve' }}
                     </button>
                   </div>
                 </td>
@@ -202,6 +206,9 @@ const selectedCounterId = ref(null)
 const COOLDOWN_MS = 2000
 const callNextCooldown = ref(false)
 const recallingIds = ref([])
+const resolvingIds = ref([])
+let callNextTimer = null
+const actionTimers = {}
 
 const organizationOptions = computed(() =>
   organizations.value.map((o) => ({
@@ -216,6 +223,14 @@ const serviceOptions = computed(() =>
     value: s.id,
     label: s.name,
     isActive: s.isActive,
+  })),
+)
+
+const counterOptions = computed(() =>
+  counters.value.map((c) => ({
+    value: c.id,
+    label: c.counterNumber,
+    isActive: c.isActive,
   })),
 )
 
@@ -259,7 +274,7 @@ const connectSocket = () => {
         fetchQueueData()
       } else if (event === 'ticket:called') {
         showSuccessToast(
-          `Ticket ${data.prefix}-${data.queueNumber} called by ${data.counterNumber}!`,
+          `Ticket ${data.queueNumber} called by ${data.calledBy || data.counterNumber}!`,
         )
         playBeep()
         fetchQueueData()
@@ -301,7 +316,8 @@ const callNext = async () => {
     return
   }
   callNextCooldown.value = true
-  setTimeout(() => { callNextCooldown.value = false }, COOLDOWN_MS)
+  if (callNextTimer) clearTimeout(callNextTimer)
+  callNextTimer = setTimeout(() => { callNextCooldown.value = false }, COOLDOWN_MS)
   try {
     await callNextTicket({ serviceId: selectedServiceId.value, counterId: selectedCounterId.value })
     hasNewTickets.value = false
@@ -313,10 +329,18 @@ const callNext = async () => {
 }
 
 const resolveTicketForRow = async (ticket) => {
+  if (resolvingIds.value.includes(ticket.id)) return
   if (!selectedServiceId.value || !selectedCounterId.value) {
     showErrorToast('Please select both a service and a counter.')
     return
   }
+  resolvingIds.value = [...resolvingIds.value, ticket.id]
+  const resolveKey = `resolve_${ticket.id}`
+  if (actionTimers[resolveKey]) clearTimeout(actionTimers[resolveKey])
+  actionTimers[resolveKey] = setTimeout(() => {
+    resolvingIds.value = resolvingIds.value.filter((id) => id !== ticket.id)
+    delete actionTimers[resolveKey]
+  }, COOLDOWN_MS)
   try {
     await performTicketAction({
       action: 'resolve',
@@ -337,8 +361,10 @@ const recallTicket = async (ticket) => {
     return
   }
   recallingIds.value = [...recallingIds.value, ticket.id]
-  setTimeout(() => {
+  if (actionTimers[ticket.id]) clearTimeout(actionTimers[ticket.id])
+  actionTimers[ticket.id] = setTimeout(() => {
     recallingIds.value = recallingIds.value.filter((id) => id !== ticket.id)
+    delete actionTimers[ticket.id]
   }, COOLDOWN_MS)
   try {
     await performTicketAction({
@@ -421,6 +447,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disconnectSocket()
+  if (callNextTimer) clearTimeout(callNextTimer)
+  Object.values(actionTimers).forEach(clearTimeout)
 })
 
 watch(selectedOrganizationId, async (newOrgId) => {

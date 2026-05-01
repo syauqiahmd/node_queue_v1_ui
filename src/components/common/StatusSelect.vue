@@ -14,6 +14,7 @@
     >
       <span v-if="selected" class="flex items-center gap-2.5 min-w-0">
         <span
+          v-if="showStatus"
           :class="selected.isActive ? 'bg-success-500' : 'bg-error-400'"
           class="shrink-0 w-2 h-2 rounded-full"
         />
@@ -42,7 +43,7 @@
         v-if="isOpen"
         class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden"
       >
-        <!-- Null / clear option -->
+        <!-- Clear / placeholder option -->
         <div
           @click="handleSelect(null)"
           class="flex items-center gap-2.5 px-4 py-2.5 text-sm cursor-pointer text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5"
@@ -56,10 +57,10 @@
           <div
             v-for="option in options"
             :key="option.value"
-            @click="option.isActive ? handleSelect(option.value) : null"
+            @click="isSelectable(option) ? handleSelect(option.value) : null"
             :class="[
               'flex items-center gap-2.5 px-4 py-2.5 text-sm',
-              option.isActive
+              isSelectable(option)
                 ? option.value === modelValue
                   ? 'cursor-pointer bg-brand-50 dark:bg-brand-500/10'
                   : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5'
@@ -67,6 +68,7 @@
             ]"
           >
             <span
+              v-if="showStatus"
               :class="option.isActive ? 'bg-success-500' : 'bg-error-400'"
               class="shrink-0 w-2 h-2 rounded-full"
             />
@@ -79,7 +81,7 @@
               ]"
             >{{ option.label }}</span>
             <span
-              v-if="!option.isActive"
+              v-if="showStatus && option.isActive === false"
               class="ml-auto shrink-0 text-xs text-error-400 dark:text-error-500"
             >Inactive</span>
           </div>
@@ -98,9 +100,10 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   modelValue: { default: null },
-  options: { type: Array, default: () => [] },
+  options:    { type: Array,   default: () => [] },
   placeholder: { type: String, default: '-- Select --' },
-  disabled: { type: Boolean, default: false },
+  disabled:   { type: Boolean, default: false },
+  showStatus: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -109,6 +112,10 @@ const isOpen = ref(false)
 const containerRef = ref(null)
 
 const selected = computed(() => props.options.find((o) => o.value === props.modelValue) ?? null)
+
+// When showStatus is off, all options are selectable regardless of isActive
+const isSelectable = (option) =>
+  !props.showStatus || option.isActive !== false
 
 const toggle = () => {
   if (!props.disabled) isOpen.value = !isOpen.value

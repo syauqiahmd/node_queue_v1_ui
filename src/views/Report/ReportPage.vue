@@ -7,33 +7,23 @@
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
           Select Organization
         </h3>
-        <select
+        <StatusSelect
           v-model="selectedOrganizationId"
-          class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-        >
-          <option :value="null">-- Select Organization --</option>
-          <option
-            v-for="organization in organizations"
-            :key="organization.id"
-            :value="organization.id"
-          >
-            {{ organization.name }} - {{ organization.fullName }}
-          </option>
-        </select>
+          :options="organizationOptions"
+          placeholder="-- Select Organization --"
+          :show-status="false"
+        />
       </ComponentCard>
 
       <ComponentCard>
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">Select Service</h3>
-        <select
+        <StatusSelect
           v-model="selectedServiceId"
+          :options="serviceOptions"
+          placeholder="-- Select Service --"
           :disabled="!selectedOrganizationId"
-          class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-        >
-          <option :value="null">-- Select Service --</option>
-          <option v-for="service in services" :key="service.id" :value="service.id">
-            {{ service.name }}
-          </option>
-        </select>
+          :show-status="false"
+        />
       </ComponentCard>
     </div>
 
@@ -50,10 +40,13 @@
           />
         </div>
         <div class="space-y-2">
-          <label for="report-end-date" class="text-sm text-gray-700">End Date</label>
+          <label for="report-end-date" class="text-sm text-gray-700">
+            End Date
+            <span class="text-xs text-gray-400 font-normal ml-1">(max. 1 month from start)</span>
+          </label>
           <VueFlatpickr
             v-model="endDate"
-            :config="fpConfig"
+            :config="endFpConfig"
             id="report-end-date"
             class="h-11 w-full rounded-lg border border-gray-200 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90"
           />
@@ -78,6 +71,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import dayjs from 'dayjs'
 import PageTitle from '@/components/common/PageTitle.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
+import StatusSelect from '@/components/common/StatusSelect.vue'
 import VueFlatpickr from 'vue-flatpickr-component'
 import { useOrganizationStore, useServiceStore, useReportStore, useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
@@ -96,6 +90,22 @@ const { fetchServices } = serviceStore
 
 const reportStore = useReportStore()
 
+const organizationOptions = computed(() =>
+  organizations.value.map((o) => ({
+    value: o.id,
+    label: `${o.name} - ${o.fullName}`,
+    isActive: o.isActive,
+  })),
+)
+
+const serviceOptions = computed(() =>
+  services.value.map((s) => ({
+    value: s.id,
+    label: s.name,
+    isActive: s.isActive,
+  })),
+)
+
 const selectedOrganizationId = ref(null)
 const selectedServiceId = ref(null)
 const startDate = ref('')
@@ -106,6 +116,14 @@ const fpConfig = {
   allowInput: true,
   disableMobile: true,
 }
+
+const endFpConfig = computed(() => ({
+  ...fpConfig,
+  minDate: startDate.value || undefined,
+  maxDate: startDate.value
+    ? dayjs(startDate.value).add(1, 'month').format('YYYY-MM-DD')
+    : undefined,
+}))
 
 onMounted(async () => {
   if (isAdmin.value) {
@@ -125,6 +143,13 @@ onMounted(async () => {
     }
   }
   startDate.value = dayjs().format('YYYY-MM-DD')
+})
+
+watch(startDate, (newStart) => {
+  if (endDate.value && newStart) {
+    const maxEnd = dayjs(newStart).add(1, 'month').format('YYYY-MM-DD')
+    if (endDate.value > maxEnd || endDate.value < newStart) endDate.value = ''
+  }
 })
 
 watch(selectedOrganizationId, async (newOrgId) => {

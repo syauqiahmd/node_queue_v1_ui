@@ -49,14 +49,13 @@
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
             Role <span class="text-error-500">*</span>
           </label>
-          <select
+          <StatusSelect
             v-model="formData.role"
-            @change="errors.organizationId = ''"
-            :class="fieldClass(errors.role)"
-          >
-            <option value="ADMIN">Admin</option>
-            <option value="USER">User</option>
-          </select>
+            :options="roleOptions"
+            placeholder="-- Select Role --"
+            :show-status="false"
+            @update:modelValue="errors.organizationId = ''"
+          />
           <p v-if="errors.role" class="mt-1 text-sm text-error-500">{{ errors.role }}</p>
         </div>
 
@@ -64,17 +63,14 @@
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
             Organization <span class="text-error-500">*</span>
           </label>
-          <select
+          <StatusSelect
             v-model="formData.organizationId"
+            :options="organizationOptions"
+            placeholder="-- Select Organization --"
             :disabled="loading"
-            @change="errors.organizationId = ''"
-            :class="[fieldClass(errors.organizationId), !formData.organizationId ? 'text-gray-400 dark:text-gray-500' : '']"
-          >
-            <option :value="null">-- Select Organization --</option>
-            <option v-for="org in organizations" :key="org.id" :value="org.id">
-              {{ org.name }} - {{ org.fullName }}
-            </option>
-          </select>
+            :show-status="false"
+            @update:modelValue="errors.organizationId = ''"
+          />
           <p v-if="errors.organizationId" class="mt-1 text-sm text-error-500">{{ errors.organizationId }}</p>
         </div>
 
@@ -114,7 +110,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import PageTitle from '@/components/common/PageTitle.vue'
 import { useUserStore, useOrganizationStore } from '@/stores'
 import { storeToRefs } from 'pinia'
@@ -123,6 +119,7 @@ const router = useRouter()
 const route = useRoute()
 
 import ComponentCard from '@/components/common/ComponentCard.vue'
+import StatusSelect from '@/components/common/StatusSelect.vue'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Add User')
@@ -135,6 +132,19 @@ const { fetchUser, createUser, updateUser } = userStore
 const organizationStore = useOrganizationStore()
 const { organizations } = storeToRefs(organizationStore)
 const { fetchOrganizations } = organizationStore
+
+const roleOptions = [
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'USER',  label: 'User' },
+]
+
+const organizationOptions = computed(() =>
+  organizations.value.map((o) => ({
+    value: o.id,
+    label: `${o.name} - ${o.fullName}`,
+    isActive: o.isActive,
+  })),
+)
 
 const formData = reactive({
   userName: '',
