@@ -1,5 +1,6 @@
 <template>
   <ThemeProvider>
+    <TopLoadingBar />
     <div class="min-h-screen xl:flex">
       <app-sidebar />
       <BaseBackdrop />
@@ -22,6 +23,7 @@ import AppSidebar from './AppSidebar.vue'
 import AppHeader from './AppHeader.vue'
 import BaseBackdrop from './BaseBackdrop.vue'
 import ThemeProvider from './ThemeProvider.vue'
+import TopLoadingBar from '@/components/common/TopLoadingBar.vue'
 import { useSidebarProvider } from '@/composables/useSidebar'
 
 const { isExpanded, isHovered } = useSidebarProvider()

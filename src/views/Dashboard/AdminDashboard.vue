@@ -7,33 +7,21 @@
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
           Select Organization
         </h3>
-        <select
+        <StatusSelect
           v-model="selectedOrganizationId"
-          class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-        >
-          <option :value="null">-- Select Organization --</option>
-          <option
-            v-for="organization in organizations"
-            :key="organization.id"
-            :value="organization.id"
-          >
-            {{ organization.name }} - {{ organization.fullName }}
-          </option>
-        </select>
+          :options="organizationOptions"
+          placeholder="-- Select Organization --"
+        />
       </ComponentCard>
 
       <ComponentCard>
         <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">Select Service</h3>
-        <select
+        <StatusSelect
           v-model="selectedServiceId"
+          :options="serviceOptions"
+          placeholder="-- Select Service --"
           :disabled="!selectedOrganizationId"
-          class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-        >
-          <option :value="null">-- Select Service --</option>
-          <option v-for="service in services" :key="service.id" :value="service.id">
-            {{ service.name }}
-          </option>
-        </select>
+        />
       </ComponentCard>
 
       <ComponentCard>
@@ -180,6 +168,7 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import PageTitle from '@/components/common/PageTitle.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
+import StatusSelect from '@/components/common/StatusSelect.vue'
 import { useQueueStore, useServiceStore, useCounterStore, useOrganizationStore, useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
@@ -208,6 +197,22 @@ const { fetchCounters } = counterStore
 const selectedOrganizationId = ref(null)
 const selectedServiceId = ref(null)
 const selectedCounterId = ref(null)
+
+const organizationOptions = computed(() =>
+  organizations.value.map((o) => ({
+    value: o.id,
+    label: `${o.name} - ${o.fullName}`,
+    isActive: o.isActive,
+  })),
+)
+
+const serviceOptions = computed(() =>
+  services.value.map((s) => ({
+    value: s.id,
+    label: s.name,
+    isActive: s.isActive,
+  })),
+)
 
 let socket = null
 
@@ -349,8 +354,9 @@ const getCounterNumber = (counterId) => {
 onMounted(async () => {
   if (isAdmin.value) {
     await fetchOrganizations({ pagination: true, pageSize: 25, sortBy: 'name', sortOrder: 'asc' })
-    if (organizations.value.length > 0) {
-      selectedOrganizationId.value = organizations.value[0].id
+    const firstActiveOrg = organizations.value.find((o) => o.isActive)
+    if (firstActiveOrg) {
+      selectedOrganizationId.value = firstActiveOrg.id
       await fetchServices({
         pagination: false,
         organizationId: selectedOrganizationId.value,
@@ -358,8 +364,9 @@ onMounted(async () => {
         sortBy: 'name',
         sortOrder: 'asc',
       })
-      if (services.value.length > 0) {
-        selectedServiceId.value = services.value[0].id
+      const firstActiveService = services.value.find((s) => s.isActive)
+      if (firstActiveService) {
+        selectedServiceId.value = firstActiveService.id
         await fetchCounters({
           pagination: false,
           serviceId: selectedServiceId.value,
@@ -367,9 +374,7 @@ onMounted(async () => {
           sortBy: 'counterNumber',
           sortOrder: 'asc',
         })
-        if (counters.value.length > 0) {
-          selectedCounterId.value = counters.value[0].id
-        }
+        selectedCounterId.value = counters.value.find((c) => c.isActive)?.id ?? null
       }
     }
   } else {
@@ -383,8 +388,9 @@ onMounted(async () => {
         sortBy: 'name',
         sortOrder: 'asc',
       })
-      if (services.value.length > 0) {
-        selectedServiceId.value = services.value[0].id
+      const firstActiveService = services.value.find((s) => s.isActive)
+      if (firstActiveService) {
+        selectedServiceId.value = firstActiveService.id
         await fetchCounters({
           pagination: false,
           serviceId: selectedServiceId.value,
@@ -392,9 +398,7 @@ onMounted(async () => {
           sortBy: 'counterNumber',
           sortOrder: 'asc',
         })
-        if (counters.value.length > 0) {
-          selectedCounterId.value = counters.value[0].id
-        }
+        selectedCounterId.value = counters.value.find((c) => c.isActive)?.id ?? null
       }
     }
   }
@@ -419,9 +423,7 @@ watch(selectedOrganizationId, async (newOrgId) => {
       sortBy: 'name',
       sortOrder: 'asc',
     })
-    if (services.value.length > 0) {
-      selectedServiceId.value = services.value[0].id
-    }
+    selectedServiceId.value = services.value.find((s) => s.isActive)?.id ?? null
   }
 })
 watch(selectedServiceId, async (newServiceId) => {
@@ -435,9 +437,7 @@ watch(selectedServiceId, async (newServiceId) => {
       sortBy: 'counterNumber',
       sortOrder: 'asc',
     })
-    if (counters.value.length > 0) {
-      selectedCounterId.value = counters.value[0].id
-    }
+    selectedCounterId.value = counters.value.find((c) => c.isActive)?.id ?? null
   }
   fetchQueueData()
 })

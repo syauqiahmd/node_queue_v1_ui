@@ -218,7 +218,10 @@ const menuGroups = computed(() => {
   return [{ title: `${userRole} MENU`, items: menuItems }]
 })
 
-const isActive = (path) => route.path === path
+const isActive = (path) => {
+  if (path === '/admin/') return route.path === '/admin' || route.path === '/admin/'
+  return route.path === path || route.path.startsWith(path + '/')
+}
 
 const toggleSubmenu = (groupIndex, itemIndex) => {
   const key = `${groupIndex}-${itemIndex}`

@@ -3,6 +3,9 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { useAuthStore } from '../stores/auth';
 import router from '../router';
+import { useLoadingBar } from '../composables/useLoadingBar'
+
+const { start: startLoading, finish: finishLoading } = useLoadingBar()
 
 let API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -16,6 +19,7 @@ const request = axios.create({
 
 request.interceptors.request.use(
   (config) => {
+    startLoading()
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -23,15 +27,18 @@ request.interceptors.request.use(
     return config;
   },
   (error) => {
+    finishLoading()
     return Promise.reject(error);
   }
 );
 
 request.interceptors.response.use(
   (response) => {
+    finishLoading()
     return response
   },
   (error) => {
+    finishLoading()
     if (error.response && error.response.status === 404) {
       const message = error.response?.data?.error?.message || 'Resource not found.'
       const code = error.response?.data?.error?.code || 'Not Found'

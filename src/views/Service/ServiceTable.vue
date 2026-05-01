@@ -9,12 +9,31 @@
       add-button-text="Add Service"
       @add-new="goToCreatePage"
     >
+      <!-- Filter chips -->
+      <div class="flex gap-2 mb-4">
+        <button
+          @click="setStatusFilter('')"
+          :class="statusFilter === '' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          class="px-3 py-1.5 text-xs font-medium rounded-full transition"
+        >All</button>
+        <button
+          @click="setStatusFilter(true)"
+          :class="statusFilter === true ? 'bg-success-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          class="px-3 py-1.5 text-xs font-medium rounded-full transition"
+        >Active</button>
+        <button
+          @click="setStatusFilter(false)"
+          :class="statusFilter === false ? 'bg-error-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          class="px-3 py-1.5 text-xs font-medium rounded-full transition"
+        >Inactive</button>
+      </div>
+
       <div
         class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]"
       >
-        <div class="max-w-full overflow-x-auto custom-scrollbar">
+        <div class="max-w-full overflow-auto max-h-[440px] custom-scrollbar">
           <table class="min-w-full">
-            <thead>
+            <thead class="sticky top-0 z-10 bg-white dark:bg-gray-900">
               <tr class="border-b border-gray-200 dark:border-gray-700">
                 <th class="px-5 py-3 text-left w-1/20 sm:px-6">
                   <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">#</p>
@@ -59,7 +78,19 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <!-- Skeleton loading rows -->
+              <TableSkeleton v-if="loading && services.length === 0" :rows="5" :columns="6" />
+
+              <!-- Empty state -->
+              <tr v-else-if="!loading && services.length === 0">
+                <td :colspan="6">
+                  <EmptyState message="No services found" description="Try adjusting your search or filter criteria." />
+                </td>
+              </tr>
+
+              <!-- Data rows -->
               <tr
+                v-else
                 v-for="(service, index) in services"
                 :key="service.id"
                 class="border-t border-gray-100 dark:border-gray-800"
@@ -68,7 +99,10 @@
                   <p class="text-gray-500 text-theme-sm dark:text-gray-400">{{ index + 1 }}</p>
                 </td>
                 <td class="px-5 py-4 sm:px-6">
-                  <p class="text-gray-500 text-theme-sm dark:text-gray-400">
+                  <p
+                    class="text-gray-500 text-theme-sm dark:text-gray-400 truncate max-w-[200px]"
+                    :title="service.name"
+                  >
                     {{ service.name }}
                   </p>
                 </td>
@@ -78,7 +112,10 @@
                   </p>
                 </td>
                 <td class="px-5 py-4 sm:px-6">
-                  <p class="text-gray-500 text-theme-sm dark:text-gray-400">
+                  <p
+                    class="text-gray-500 text-theme-sm dark:text-gray-400 truncate max-w-[200px]"
+                    :title="`${service.organization.name} - ${service.organization.fullName}`"
+                  >
                     {{ service.organization.name }} - {{ service.organization.fullName }}
                   </p>
                 </td>
@@ -123,7 +160,7 @@
                     </router-link>
                     <button
                       v-if="isAdmin"
-                      @click="() => handleDelete(service.id)"
+                      @click="() => handleDelete(service.id, service.name)"
                       class="flex items-center px-2 py-1 rounded text-sm bg-error-50 text-error-600 hover:bg-error-100 hover:text-error-700 dark:bg-error-900 dark:text-error-300 dark:hover:bg-error-800 dark:hover:text-error-200"
                       title="Hapus"
                     >
@@ -171,6 +208,8 @@ import { storeToRefs } from 'pinia'
 import { showConfirmationDialog, showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import PaginationBarAdmin from '@/components/common/PaginationBarAdmin.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import TableSkeleton from '@/components/common/TableSkeleton.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -184,6 +223,7 @@ const searchQuery = ref('')
 const searchBy = ref('name')
 const sortBy = ref('name')
 const sortOrder = ref('asc')
+const statusFilter = ref('')
 
 const searchableList = ref([
   { name: 'Name', param: 'name' },
@@ -198,7 +238,13 @@ const loadServices = (page = 1) => {
     searchBy: searchBy.value,
     sortBy: sortBy.value,
     sortOrder: sortOrder.value,
+    isActive: statusFilter.value,
   })
+}
+
+const setStatusFilter = (value) => {
+  statusFilter.value = value
+  loadServices()
 }
 
 const handleSearch = (params) => {
@@ -217,13 +263,13 @@ const handleSort = (newSortBy) => {
   loadServices(pagination.value.page)
 }
 
-const handleDelete = async (id) => {
-  const confirmed = await showConfirmationDialog()
+const handleDelete = async (id, name) => {
+  const confirmed = await showConfirmationDialog(name)
   if (confirmed) {
     try {
       await deleteService(id)
       showSuccessToast('Service deleted successfully!')
-      loadServices(pagination.value.page) // Reload data after deletion
+      loadServices(pagination.value.page)
     } catch (error) {
       showErrorToast('Failed to delete service.')
       console.error('Error deleting service:', error)
@@ -243,4 +289,3 @@ onMounted(() => {
   loadServices()
 })
 </script>
-
