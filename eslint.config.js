@@ -15,9 +15,7 @@ export default defineConfig([
 
   {
     languageOptions: {
-      globals: {
-        ...globals.browser,
-      },
+      globals: { ...globals.browser },
     },
   },
 
@@ -25,11 +23,31 @@ export default defineConfig([
   ...pluginVue.configs['flat/essential'],
   ...pluginOxlint.configs['flat/recommended'],
   skipFormatting,
+
   {
-    name: 'validation-overrides',
-    files: ['src/validation/*.js'],
+    name: 'app/rules',
     rules: {
-      'unicorn/no-thenable': 'off',
+      // JS quality
+      'no-console':    ['warn', { allow: ['warn', 'error'] }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-debugger':   'warn',
+      'prefer-const':  'error',
+      'no-var':        'error',
+      'eqeqeq':        ['error', 'always', { null: 'ignore' }],
+
+      // Vue quality
+      'vue/multi-word-component-names':      'off',
+      'vue/no-unused-vars':                  'warn',
+      'vue/no-unused-components':            'warn',
+      'vue/component-definition-name-casing': ['error', 'PascalCase'],
+      'vue/no-v-html':                       'off',
+      'vue/require-default-prop':            'off',
+      'vue/prop-name-casing':                ['error', 'camelCase'],
+      'vue/no-mutating-props':               'error',
+      'vue/no-template-shadow':              'warn',
+      'vue/v-bind-style':                    ['error', 'shorthand'],
+      'vue/v-on-style':                      ['error', 'shorthand'],
+      'vue/block-order':                     ['error', { order: ['template', 'script', 'style'] }],
     },
   },
 ])

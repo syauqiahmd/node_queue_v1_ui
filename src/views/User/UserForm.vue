@@ -120,7 +120,7 @@ const route = useRoute()
 
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import StatusSelect from '@/components/common/StatusSelect.vue'
-import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
+import { showSuccessToast, showApiErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Add User')
 const firstInputRef = ref(null)
@@ -251,7 +251,7 @@ const handleSubmit = async () => {
     }
     router.push('/admin/users')
   } catch (error) {
-    showErrorToast('Failed to save user.')
+    showApiErrorToast(error, 'Failed to save user.')
     console.error('Error saving user:', error)
   }
 }

@@ -99,7 +99,7 @@ const route = useRoute()
 
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import StatusSelect from '@/components/common/StatusSelect.vue'
-import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
+import { showSuccessToast, showApiErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Add Counter')
 const firstInputRef = ref(null)
@@ -234,7 +234,7 @@ const handleSubmit = async () => {
     }
     router.push('/admin/counters')
   } catch (error) {
-    showErrorToast('Failed to save counter.')
+    showApiErrorToast(error, 'Failed to save counter.')
     console.error('Error saving counter:', error)
   }
 }

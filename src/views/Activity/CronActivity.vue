@@ -57,7 +57,7 @@ import { ref, onMounted } from 'vue'
 import dayjs from 'dayjs'
 import PageTitle from '@/components/common/PageTitle.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
+import { showSuccessToast, showErrorToast, showApiErrorToast } from '@/helpers/sweetalert'
 import { useCronStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import VueFlatpickr from 'vue-flatpickr-component'
@@ -95,8 +95,8 @@ const handleTrigger = async () => {
     await cronStore.triggerCron(payload)
     showSuccessToast('Cron triggered successfully')
     form.value.masterPassword = ''
-  } catch {
-    showErrorToast('Failed to trigger cron')
+  } catch (error) {
+    showApiErrorToast(error, 'Failed to trigger cron.')
   }
 }
 </script>

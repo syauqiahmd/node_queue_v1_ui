@@ -1,36 +1,36 @@
-
-import axios from 'axios';
-import Swal from 'sweetalert2';
-import { useAuthStore } from '../stores/auth';
-import router from '../router';
+import axios from 'axios'
+import Swal from 'sweetalert2'
+import { useAuthStore } from '../stores/auth'
+import router from '../router'
 import { useLoadingBar } from '../composables/useLoadingBar'
+import { API_PATHS } from './constants'
 
 const { start: startLoading, finish: finishLoading } = useLoadingBar()
 
-let API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+let API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 if (API_BASE_URL && API_BASE_URL.startsWith('localhost')) {
-  API_BASE_URL = `http://${API_BASE_URL}`;
+  API_BASE_URL = `http://${API_BASE_URL}`
 }
 
 const request = axios.create({
   baseURL: API_BASE_URL || '/api',
-});
+})
 
 request.interceptors.request.use(
   (config) => {
     startLoading()
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('access_token')
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`
     }
-    return config;
+    return config
   },
   (error) => {
     finishLoading()
-    return Promise.reject(error);
-  }
-);
+    return Promise.reject(error)
+  },
+)
 
 request.interceptors.response.use(
   (response) => {
@@ -42,29 +42,30 @@ request.interceptors.response.use(
     if (error.response && error.response.status === 404) {
       const message = error.response?.data?.error?.message || 'Resource not found.'
       const code = error.response?.data?.error?.code || 'Not Found'
-
-      Swal.fire({
-        icon: 'error',
-        title: code,
-        text: message
-      })
+      error._swalShown = true
+      Swal.fire({ icon: 'error', title: code, text: message })
       return Promise.reject(error)
     }
 
     if (error.response && error.response.status === 401) {
-      const authStore = useAuthStore()
-      const errorMessage =
-        error.response?.data?.error?.message?.message || 'Your session has expired. Please log in again.'
-      const errorTitle = error.response?.data?.error?.code || 'Unauthorized'
-
-      Swal.fire({
-        icon: 'error',
-        title: errorTitle,
-        text: errorMessage
-      }).then(async () => {
-        await authStore.logout()
-        router.push('/login')
-      })
+      // Login endpoint returning 401 means invalid credentials — let the
+      // auth store handle it inline; don't show the session-expired popup.
+      const isLoginRequest = error.config?.url?.includes(API_PATHS.AUTH.LOGIN)
+      if (!isLoginRequest) {
+        const authStore = useAuthStore()
+        const errorMessage =
+          error.response?.data?.error?.message || 'Your session has expired. Please log in again.'
+        const errorTitle = error.response?.data?.error?.code || 'Unauthorized'
+        error._swalShown = true
+        Swal.fire({
+          icon: 'error',
+          title: errorTitle,
+          text: errorMessage,
+        }).then(async () => {
+          await authStore.logout()
+          router.push('/login')
+        })
+      }
       return Promise.reject(error)
     }
 
@@ -93,17 +94,18 @@ request.interceptors.response.use(
       }
     }
 
+    error._swalShown = true
     Swal.fire({
       icon: 'error',
       title: 'Oops...',
       text: transactionId
         ? error.response?.data?.error?.message || 'Something went wrong!'
-        : ' Please report this error to the developer.',
+        : 'An unexpected error occurred. Please report this to your administrator.',
       footer: footerContent,
-      didOpen: didOpenFunction
+      didOpen: didOpenFunction,
     })
     return Promise.reject(error)
-  }
-);
+  },
+)
 
-export default request;
+export default request

@@ -1,180 +1,208 @@
 <template>
-  <div class="relative p-6 bg-white z-1 dark:bg-gray-900 sm:p-0">
-    <div class="relative flex flex-col justify-center w-full h-screen lg:flex-row dark:bg-gray-900">
-      <div class="flex flex-col flex-1 w-full lg:w-1/2">
-        <div class="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
-          <div>
-            <div class="mb-5 sm:mb-8">
-              <h1
-                class="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md"
-              >
-                Sign In
-              </h1>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                Masukan username dan password untuk sign in!
+  <div class="flex min-h-screen">
+
+    <!-- ── Left: Form panel ───────────────────────────── -->
+    <div class="flex flex-1 flex-col items-center justify-center px-6 py-12 bg-white sm:px-10 lg:px-16">
+
+      <!-- Mobile-only logo -->
+      <div class="mb-8 lg:hidden">
+        <img src="@/assets/square-logo.png" class="w-14 h-14 mx-auto" alt="Logo" />
+      </div>
+
+      <div class="w-full max-w-[400px]">
+        <!-- Heading -->
+        <div class="mb-8">
+          <h1 class="text-2xl font-semibold text-gray-900 sm:text-3xl">
+            Selamat Datang
+          </h1>
+          <p class="mt-2 text-sm text-gray-500">
+            Masukan username dan password untuk melanjutkan
+          </p>
+        </div>
+
+        <form @submit.prevent="handleSubmit" novalidate>
+          <div class="space-y-5">
+
+            <!-- Username -->
+            <div>
+              <label for="username" class="mb-1.5 block text-sm font-medium text-gray-700">
+                Username <span class="text-error-500">*</span>
+              </label>
+              <input
+                ref="usernameRef"
+                v-model="userName"
+                @input="errors.userName = ''"
+                type="text"
+                id="username"
+                name="username"
+                placeholder="Masukan username"
+                autocomplete="username"
+                :class="[
+                  'h-11 w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-3 transition',
+                  errors.userName
+                    ? 'border-error-400 focus:border-error-400 focus:ring-error-500/10'
+                    : 'border-gray-300 focus:border-brand-400 focus:ring-brand-500/10',
+                ]"
+              />
+              <p v-if="errors.userName" class="mt-1.5 text-xs text-error-500 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                {{ errors.userName }}
               </p>
             </div>
+
+            <!-- Password -->
             <div>
-              <form @submit.prevent="handleSubmit">
-                <div class="space-y-5">
-                  <!-- Username -->
-                  <div>
-                    <label
-                      for="username"
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Username<span class="text-error-500">*</span>
-                    </label>
-                    <input
-                      v-model="userName"
-                      @input="errors.userName = ''"
-                      type="text"
-                      id="username"
-                      name="username"
-                      placeholder="username"
-                      autofocus
-                      :class="[
-                        'dark:bg-dark-900 h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30',
-                        errors.userName
-                          ? 'border-error-400 focus:border-error-400 focus:ring-error-500/10 dark:border-error-500'
-                          : 'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800',
-                      ]"
-                    />
-                    <p v-if="errors.userName" class="mt-1 text-sm text-error-500">{{ errors.userName }}</p>
-                  </div>
-                  <!-- Password -->
-                  <div>
-                    <label
-                      for="password"
-                      class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Password<span class="text-error-500">*</span>
-                    </label>
-                    <div class="relative">
-                      <input
-                        v-model="password"
-                        :type="showPassword ? 'text' : 'password'"
-                        id="password"
-                        placeholder="Enter your password"
-                        @input="errors.password = ''"
-                        :class="[
-                          'dark:bg-dark-900 h-11 w-full rounded-lg border bg-transparent py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30',
-                          errors.password
-                            ? 'border-error-400 focus:border-error-400 focus:ring-error-500/10 dark:border-error-500'
-                            : 'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800',
-                        ]"
-                      />
-                      <span
-                        @click="togglePasswordVisibility"
-                        class="absolute z-30 text-gray-500 -translate-y-1/2 cursor-pointer right-4 top-1/2 dark:text-gray-400"
-                      >
-                        <svg
-                          v-if="!showPassword"
-                          class="fill-current"
-                          width="20"
-                          height="20"
-                          viewBox="0 0 20 20"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            clip-rule="evenodd"
-                            d="M10.0002 13.8619C7.23361 13.8619 4.86803 12.1372 3.92328 9.70241C4.86804 7.26761 7.23361 5.54297 10.0002 5.54297C12.7667 5.54297 15.1323 7.26762 16.0771 9.70243C15.1323 12.1372 12.7667 13.8619 10.0002 13.8619ZM10.0002 4.04297C6.48191 4.04297 3.49489 6.30917 2.4155 9.4593C2.3615 9.61687 2.3615 9.78794 2.41549 9.94552C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C13.5184 15.3619 16.5055 13.0957 17.5849 9.94555C17.6389 9.78797 17.6389 9.6169 17.5849 9.45932C16.5055 6.30919 13.5184 4.04297 10.0002 4.04297ZM9.99151 7.84413C8.96527 7.84413 8.13333 8.67606 8.13333 9.70231C8.13333 10.7286 8.96527 11.5605 9.99151 11.5605H10.0064C11.0326 11.5605 11.8646 10.7286 11.8646 9.70231C11.8646 8.67606 11.0326 7.84413 10.0064 7.84413H9.99151Z"
-                            fill="#98A2B3"
-                          />
-                        </svg>
-                        <svg
-                          v-else
-                          class="fill-current"
-                          width="20"
-                          height="20"
-                          viewBox="0 0 20 20"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            clip-rule="evenodd"
-                            d="M4.63803 3.57709C4.34513 3.2842 3.87026 3.2842 3.57737 3.57709C3.28447 3.86999 3.28447 4.34486 3.57737 4.63775L4.85323 5.91362C3.74609 6.84199 2.89363 8.06395 2.4155 9.45936C2.3615 9.61694 2.3615 9.78801 2.41549 9.94558C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C11.255 15.3619 12.4422 15.0737 13.4994 14.5598L15.3625 16.4229C15.6554 16.7158 16.1302 16.7158 16.4231 16.4229C16.716 16.13 16.716 15.6551 16.4231 15.3622L4.63803 3.57709ZM12.3608 13.4212L10.4475 11.5079C10.3061 11.5423 10.1584 11.5606 10.0064 11.5606H9.99151C8.96527 11.5606 8.13333 10.7286 8.13333 9.70237C8.13333 9.5461 8.15262 9.39434 8.18895 9.24933L5.91885 6.97923C5.03505 7.69015 4.34057 8.62704 3.92328 9.70247C4.86803 12.1373 7.23361 13.8619 10.0002 13.8619C10.8326 13.8619 11.6287 13.7058 12.3608 13.4212ZM16.0771 9.70249C15.7843 10.4569 15.3552 11.1432 14.8199 11.7311L15.8813 12.7925C16.6329 11.9813 17.2187 11.0143 17.5849 9.94561C17.6389 9.78803 17.6389 9.61696 17.5849 9.45938C16.5055 6.30925 13.5184 4.04303 10.0002 4.04303C9.13525 4.04303 8.30244 4.17999 7.52218 4.43338L8.75139 5.66259C9.1556 5.58413 9.57311 5.54303 10.0002 5.54303C12.7667 5.54303 15.1323 7.26768 16.0771 9.70249Z"
-                            fill="#98A2B3"
-                          />
-                        </svg>
-                      </span>
-                    </div>
-                  </div>
-                  <!-- Password error -->
-                  <p v-if="errors.password" class="-mt-3 text-sm text-error-500">{{ errors.password }}</p>
-
-                  <!-- API error -->
-                  <div
-                    v-if="authStore.error"
-                    class="rounded-lg bg-error-50 dark:bg-error-500/10 border border-error-200 dark:border-error-500/20 px-4 py-3 text-sm text-error-600 dark:text-error-400"
-                  >
-                    {{ authStore.error }}
-                  </div>
-
-                  <!-- Button -->
-                  <div>
-                    <button
-                      type="submit"
-                      :disabled="authStore.loading"
-                      class="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      <svg v-if="authStore.loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                      </svg>
-                      {{ authStore.loading ? 'Signing in...' : 'Sign In' }}
-                    </button>
-                  </div>
-                </div>
-              </form>
+              <label for="password" class="mb-1.5 block text-sm font-medium text-gray-700">
+                Password <span class="text-error-500">*</span>
+              </label>
+              <div class="relative">
+                <input
+                  v-model="password"
+                  :type="showPassword ? 'text' : 'password'"
+                  id="password"
+                  placeholder="Masukan password"
+                  autocomplete="current-password"
+                  @input="errors.password = ''"
+                  :class="[
+                    'h-11 w-full rounded-lg border bg-white py-2.5 pl-4 pr-11 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-3 transition',
+                    errors.password
+                      ? 'border-error-400 focus:border-error-400 focus:ring-error-500/10'
+                      : 'border-gray-300 focus:border-brand-400 focus:ring-brand-500/10',
+                  ]"
+                />
+                <button
+                  type="button"
+                  @click="showPassword = !showPassword"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                  tabindex="-1"
+                >
+                  <svg v-if="!showPassword" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                  </svg>
+                </button>
+              </div>
+              <p v-if="errors.password" class="mt-1.5 text-xs text-error-500 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                {{ errors.password }}
+              </p>
             </div>
+
+            <!-- API error -->
+            <div
+              v-if="authStore.error"
+              class="flex items-start gap-3 rounded-lg bg-error-50 border border-error-200 px-4 py-3 text-sm text-error-600"
+            >
+              <svg class="w-4 h-4 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+              </svg>
+              <span>{{ authStore.error }}</span>
+            </div>
+
+            <!-- Submit -->
+            <button
+              type="submit"
+              :disabled="authStore.loading"
+              class="flex items-center justify-center gap-2 w-full h-11 rounded-lg bg-brand-500 text-sm font-medium text-white shadow-sm hover:bg-brand-600 focus:outline-none focus:ring-3 focus:ring-brand-500/30 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <svg v-if="authStore.loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+              </svg>
+              {{ authStore.loading ? 'Masuk...' : 'Masuk' }}
+            </button>
+
           </div>
-        </div>
+        </form>
       </div>
-      <div
-        class="relative items-center hidden w-full h-full lg:w-1/2 bg-brand-950 dark:bg-white/5 lg:grid"
-      >
-        <div class="flex items-center justify-center z-1">
-          <common-grid-shape />
-          <div class="flex flex-col items-center max-w-xs">
-            <router-link to="/" class="block mb-4">
-              <img width="{231}" height="{48}" src="@/assets/main-logo.png" alt="Logo" />
-            </router-link>
-          </div>
+
+      <!-- Footer -->
+      <p class="mt-10 text-xs text-gray-400 text-center">
+        &copy; {{ year }} QueueFlow. Sistem Manajemen Antrian.
+      </p>
+    </div>
+
+    <!-- ── Right: Brand panel ─────────────────────────── -->
+    <div class="relative hidden lg:flex lg:w-[45%] xl:w-1/2 flex-col items-center justify-center overflow-hidden bg-brand-950">
+
+      <!-- Decorative grid dots -->
+      <div class="absolute inset-0" aria-hidden="true">
+        <svg class="absolute inset-0 w-full h-full opacity-[0.07]" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="1.5" fill="white"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
+      </div>
+
+      <!-- Glow blobs -->
+      <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl" />
+      <div class="absolute bottom-1/4 right-1/4 w-64 h-64 bg-brand-400/10 rounded-full blur-3xl" />
+
+      <!-- Brand content -->
+      <div class="relative z-10 flex flex-col items-center text-center px-10 xl:px-16">
+        <div class="mb-8 p-5 rounded-2xl bg-white/5 border border-white/10 shadow-2xl">
+          <img src="@/assets/square-logo.png" class="w-20 h-20 object-contain" alt="QueueFlow" />
+        </div>
+        <h2 class="text-3xl xl:text-4xl font-bold text-white tracking-tight mb-4">
+          QueueFlow
+        </h2>
+        <p class="text-white/50 text-base leading-relaxed max-w-xs">
+          Sistem manajemen antrian modern untuk layanan publik yang efisien dan transparan
+        </p>
+
+        <!-- Feature pills -->
+        <div class="mt-10 flex flex-wrap justify-center gap-3">
+          <span v-for="feat in features" :key="feat"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/8 border border-white/10 text-white/60 text-xs font-medium"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-400"></span>
+            {{ feat }}
+          </span>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import { useAuthStore } from '@/stores'
 import { showSuccessToast } from '@/helpers/sweetalert'
+
+const year = new Date().getFullYear()
+const features = ['Real-time Queue', 'Smart Monitor', 'Kiosk Tiket', 'Laporan Harian']
 
 const userName = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const errors = reactive({ userName: '', password: '' })
+const usernameRef = ref(null)
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value
-}
+onMounted(() => {
+  usernameRef.value?.focus()
+})
 
 const validate = () => {
   errors.userName = ''
   errors.password = ''
   let valid = true
-  if (!userName.value.trim()) { errors.userName = 'Username is required.'; valid = false }
-  if (!password.value.trim()) { errors.password = 'Password is required.'; valid = false }
+  if (!userName.value.trim()) { errors.userName = 'Username wajib diisi.'; valid = false }
+  if (!password.value.trim()) { errors.password = 'Password wajib diisi.'; valid = false }
   return valid
 }
 
@@ -184,7 +212,7 @@ const handleSubmit = async () => {
   const success = await authStore.login({ userName: userName.value, password: password.value })
   if (success) {
     const name = authStore.user?.fullName || authStore.user?.userName || 'there'
-    showSuccessToast(`Welcome back, ${name}! 👋`)
+    showSuccessToast(`Selamat datang, ${name}! 👋`)
     router.push('/admin')
   }
 }

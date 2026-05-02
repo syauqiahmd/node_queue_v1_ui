@@ -50,7 +50,9 @@
                 : 'hover:bg-brand-600',
             ]"
           >
-            {{ callNextCooldown ? 'Please wait...' : queueStore.loading ? 'Calling...' : 'Call Next' }}
+            {{
+              callNextCooldown ? 'Please wait...' : queueStore.loading ? 'Calling...' : 'Call Next'
+            }}
           </button>
           <span
             v-if="hasNewTickets"
@@ -93,7 +95,9 @@
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr v-if="!queueStore.loading && queueList.length === 0">
                 <td colspan="5" class="px-5 py-10 text-center">
-                  <p class="text-sm text-gray-400 dark:text-gray-500">No active tickets in queue.</p>
+                  <p class="text-sm text-gray-400 dark:text-gray-500">
+                    No active tickets in queue.
+                  </p>
                 </td>
               </tr>
               <tr
@@ -174,9 +178,15 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import PageTitle from '@/components/common/PageTitle.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import StatusSelect from '@/components/common/StatusSelect.vue'
-import { useQueueStore, useServiceStore, useCounterStore, useOrganizationStore, useAuthStore } from '@/stores'
+import {
+  useQueueStore,
+  useServiceStore,
+  useCounterStore,
+  useOrganizationStore,
+  useAuthStore,
+} from '@/stores'
 import { storeToRefs } from 'pinia'
-import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
+import { showSuccessToast, showErrorToast, showApiErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Queue Management')
 const hasNewTickets = ref(false)
@@ -265,8 +275,8 @@ const connectSocket = () => {
   socket.onmessage = (ev) => {
     try {
       const parsed = JSON.parse(ev.data)
-      let event = parsed && parsed.event ? parsed.event : null
-      let data = parsed && parsed.data ? parsed.data : parsed
+      const event = parsed && parsed.event ? parsed.event : null
+      const data = parsed && parsed.data ? parsed.data : parsed
       if (event === 'ticket:created') {
         showSuccessToast(`New ticket ${data.prefix}-${data.queueNumber} created!`)
         if (data.serviceId === selectedServiceId.value) hasNewTickets.value = true
@@ -316,14 +326,15 @@ const callNext = async () => {
   }
   callNextCooldown.value = true
   if (callNextTimer) clearTimeout(callNextTimer)
-  callNextTimer = setTimeout(() => { callNextCooldown.value = false }, COOLDOWN_MS)
+  callNextTimer = setTimeout(() => {
+    callNextCooldown.value = false
+  }, COOLDOWN_MS)
   try {
     await callNextTicket({ serviceId: selectedServiceId.value, counterId: selectedCounterId.value })
     hasNewTickets.value = false
     await fetchQueueData()
   } catch (error) {
-    console.error('Error calling next ticket:', error)
-    showErrorToast('Failed to call next ticket.')
+    showApiErrorToast(error, 'Failed to call next ticket.')
   }
 }
 
@@ -349,8 +360,7 @@ const resolveTicketForRow = async (ticket) => {
     showSuccessToast(`Ticket ${ticket.prefix}-${ticket.queueNumber} resolved!`)
     await fetchQueueData()
   } catch (error) {
-    console.error('Error resolving ticket:', error)
-    showErrorToast('Failed to resolve ticket.')
+    showApiErrorToast(error, 'Failed to resolve ticket.')
   }
 }
 
@@ -374,8 +384,7 @@ const recallTicket = async (ticket) => {
     })
     await fetchQueueData()
   } catch (error) {
-    console.error('Error recalling ticket:', error)
-    showErrorToast('Failed to recall ticket.')
+    showApiErrorToast(error, 'Failed to recall ticket.')
   }
 }
 

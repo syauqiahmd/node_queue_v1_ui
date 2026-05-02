@@ -75,7 +75,7 @@ import StatusSelect from '@/components/common/StatusSelect.vue'
 import VueFlatpickr from 'vue-flatpickr-component'
 import { useOrganizationStore, useServiceStore, useReportStore, useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
-import { showErrorToast, showSuccessToast, showErrorAlert } from '@/helpers/sweetalert'
+import { showSuccessToast, showErrorAlert, showApiErrorToast } from '@/helpers/sweetalert'
 
 const authStore = useAuthStore()
 const isAdmin = computed(() => authStore.isAdmin)
@@ -185,13 +185,11 @@ const downloadReport = async () => {
         const message = json?.error?.message || 'Failed to download report'
         showErrorAlert(code, message)
       } else {
-        showErrorToast('Failed to download report')
+        showApiErrorToast(error, 'Failed to download report.')
       }
     } catch {
-      showErrorToast('Failed to download report')
+      showApiErrorToast(error, 'Failed to download report.')
     }
-    console.error('Report download error:', error)
   }
 }
 </script>
-
