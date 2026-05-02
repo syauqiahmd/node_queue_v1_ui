@@ -99,7 +99,7 @@ const router = useRouter()
 const route = useRoute()
 
 import ComponentCard from '@/components/common/ComponentCard.vue'
-import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
+import { showSuccessToast, showApiErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Add Organization')
 const firstInputRef = ref(null)
@@ -179,7 +179,7 @@ const handleSubmit = async () => {
     }
     router.push('/admin/organizations')
   } catch (error) {
-    showErrorToast('Failed to save organization.')
+    showApiErrorToast(error, 'Failed to save organization.')
     console.error('Error saving organization:', error)
   }
 }

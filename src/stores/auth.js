@@ -7,7 +7,7 @@ export const useAuthStore = defineStore('auth', {
     user: JSON.parse(localStorage.getItem('user')) || null,
     accessToken: localStorage.getItem('access_token') || null,
     loading: false,
-    error: null
+    error: null,
   }),
   getters: {
     isAuthenticated() {
@@ -34,8 +34,10 @@ export const useAuthStore = defineStore('auth', {
           return false
         }
       } catch (error) {
-        this.error = error.response?.data?.message || 'An unexpected error occurred during login.'
-        console.error('Login error:', error)
+        this.error =
+          error.response?.data?.error?.message ||
+          error.response?.data?.message ||
+          'An unexpected error occurred during login.'
         return false
       } finally {
         this.loading = false
@@ -52,6 +54,6 @@ export const useAuthStore = defineStore('auth', {
       this.accessToken = null
       localStorage.removeItem('access_token')
       localStorage.removeItem('user')
-    }
-  }
+    },
+  },
 })

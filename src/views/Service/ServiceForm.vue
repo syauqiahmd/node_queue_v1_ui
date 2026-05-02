@@ -98,7 +98,7 @@ const route = useRoute()
 
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import StatusSelect from '@/components/common/StatusSelect.vue'
-import { showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
+import { showSuccessToast, showApiErrorToast } from '@/helpers/sweetalert'
 
 const currentPageTitle = ref('Add Service')
 const firstInputRef = ref(null)
@@ -203,7 +203,7 @@ const handleSubmit = async () => {
     }
     router.push('/admin/services')
   } catch (error) {
-    showErrorToast('Failed to save service.')
+    showApiErrorToast(error, 'Failed to save service.')
     console.error('Error saving service:', error)
   }
 }

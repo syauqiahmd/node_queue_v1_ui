@@ -10,22 +10,40 @@
       @add-new="goToCreatePage"
     >
       <!-- Filter chips -->
-      <div class="flex gap-2 mb-4">
+      <div class="flex flex-wrap gap-2 mb-4">
         <button
           @click="setStatusFilter('')"
-          :class="statusFilter === '' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          :class="
+            statusFilter === ''
+              ? 'bg-brand-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'
+          "
           class="px-3 py-1.5 text-xs font-medium rounded-full transition"
-        >All</button>
+        >
+          All
+        </button>
         <button
           @click="setStatusFilter(true)"
-          :class="statusFilter === true ? 'bg-success-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          :class="
+            statusFilter === true
+              ? 'bg-success-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'
+          "
           class="px-3 py-1.5 text-xs font-medium rounded-full transition"
-        >Active</button>
+        >
+          Active
+        </button>
         <button
           @click="setStatusFilter(false)"
-          :class="statusFilter === false ? 'bg-error-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          :class="
+            statusFilter === false
+              ? 'bg-error-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'
+          "
           class="px-3 py-1.5 text-xs font-medium rounded-full transition"
-        >Inactive</button>
+        >
+          Inactive
+        </button>
       </div>
 
       <div
@@ -79,7 +97,10 @@
               <!-- Empty state -->
               <tr v-else-if="!loading && organizations.length === 0">
                 <td :colspan="5">
-                  <EmptyState message="No organizations found" description="Try adjusting your search or filter criteria." />
+                  <EmptyState
+                    message="No organizations found"
+                    description="Try adjusting your search or filter criteria."
+                  />
                 </td>
               </tr>
 
@@ -192,7 +213,7 @@ import PageTitle from '@/components/common/PageTitle.vue'
 import SortArrowIcon from '@/icons/SortArrowIcon.vue'
 import { useOrganizationStore, useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
-import { showConfirmationDialog, showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
+import { showConfirmationDialog, showSuccessToast, showApiErrorToast } from '@/helpers/sweetalert'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import PaginationBarAdmin from '@/components/common/PaginationBarAdmin.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -257,7 +278,7 @@ const handleDelete = async (id, name) => {
       showSuccessToast('Organization deleted successfully!')
       loadOrganizations(pagination.value.page)
     } catch (error) {
-      showErrorToast('Failed to delete organization.')
+      showApiErrorToast(error, 'Failed to delete organization.')
       console.error('Error deleting organization:', error)
     }
   }

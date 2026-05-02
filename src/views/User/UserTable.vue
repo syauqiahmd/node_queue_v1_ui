@@ -10,7 +10,7 @@
       @add-new="goToCreatePage"
     >
       <!-- Filter chips -->
-      <div class="flex gap-2 mb-4">
+      <div class="flex flex-wrap gap-2 mb-4">
         <button
           @click="setStatusFilter('')"
           :class="statusFilter === '' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
@@ -210,7 +210,7 @@ import PageTitle from '@/components/common/PageTitle.vue'
 import SortArrowIcon from '@/icons/SortArrowIcon.vue'
 import { useUserStore, useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
-import { showConfirmationDialog, showSuccessToast, showErrorToast } from '@/helpers/sweetalert'
+import { showConfirmationDialog, showSuccessToast, showApiErrorToast } from '@/helpers/sweetalert'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import PaginationBarAdmin from '@/components/common/PaginationBarAdmin.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -276,7 +276,7 @@ const handleDelete = async (id, name) => {
       showSuccessToast('User deleted successfully!')
       loadUsers(pagination.value.page)
     } catch (error) {
-      showErrorToast('Failed to delete user.')
+      showApiErrorToast(error, 'Failed to delete user.')
       console.error('Error deleting user:', error)
     }
   }

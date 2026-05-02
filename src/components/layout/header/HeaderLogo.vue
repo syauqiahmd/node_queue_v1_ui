@@ -1,6 +1,6 @@
 <template>
   <router-link to="/admin" class="lg:hidden">
-    <img src="@/assets/main-logo.png" width="150" height="40" alt="Logo" />
+    <img src="@/assets/main-logo.png" alt="Logo" class="h-9 w-auto object-contain" />
   </router-link>
 </template>
 
