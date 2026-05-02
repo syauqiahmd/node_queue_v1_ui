@@ -71,7 +71,7 @@ export const useServiceStore = defineStore('service', {
         this.loading = false
       }
     },
-    async fetchPublicServices({ pagination = false } = {}) {
+    async fetchPublicServices() {
       this.loading = true
       try {
         const headers = { accept: 'application/json' }

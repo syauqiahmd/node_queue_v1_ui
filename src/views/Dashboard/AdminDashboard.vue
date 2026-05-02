@@ -275,8 +275,8 @@ const connectSocket = () => {
   socket.onmessage = (ev) => {
     try {
       const parsed = JSON.parse(ev.data)
-      let event = parsed && parsed.event ? parsed.event : null
-      let data = parsed && parsed.data ? parsed.data : parsed
+      const event = parsed && parsed.event ? parsed.event : null
+      const data = parsed && parsed.data ? parsed.data : parsed
       if (event === 'ticket:created') {
         showSuccessToast(`New ticket ${data.prefix}-${data.queueNumber} created!`)
         if (data.serviceId === selectedServiceId.value) hasNewTickets.value = true

@@ -7,10 +7,21 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "prepare": "husky",
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix",
     "lint": "run-s lint:*",
     "format": "prettier --write src/"
+  },
+  "lint-staged": {
+    "src/**/*.{js,vue}": [
+      "oxlint --fix -D correctness",
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "src/**/*.{json,css,md}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "axios": "^1.10.0",
@@ -34,6 +45,8 @@
     "eslint-plugin-oxlint": "^0.16.0",
     "eslint-plugin-vue": "~10.0.0",
     "globals": "^16.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
     "npm-run-all2": "^7.0.2",
     "oxlint": "^0.16.0",
     "postcss": "^8.5.1",
