@@ -143,6 +143,23 @@ const router = createRouter({
           },
         },
         {
+          path: 'visitors',
+          name: 'Visitors',
+          component: () => import('../views/Visitor/VisitorTable.vue'),
+          meta: {
+            title: 'Visitors',
+            requiresAdmin: true,
+          },
+        },
+        {
+          path: 'visitor-histories',
+          name: 'VisitorHistories',
+          component: () => import('../views/Visitor/VisitorHistoryTable.vue'),
+          meta: {
+            title: 'Visitor History',
+          },
+        },
+        {
           path: 'activity',
           name: 'Activity',
           component: () => import('../views/Activity/CronActivity.vue'),

@@ -39,6 +39,11 @@ request.interceptors.response.use(
   },
   (error) => {
     finishLoading()
+    if (error.config?.silent) {
+      error._swalShown = true
+      return Promise.reject(error)
+    }
+
     if (error.response && error.response.status === 404) {
       const message = error.response?.data?.error?.message || 'Resource not found.'
       const code = error.response?.data?.error?.code || 'Not Found'
