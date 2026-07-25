@@ -55,9 +55,11 @@ export const API_PATHS = {
   VISITORS: {
     GET_ALL: '/v1/visitors',
     UPSERT_PUBLIC: '/v1/public/visitors',
+    REPORT: '/v1/visitors/report',
   },
   VISITOR_HISTORIES: {
     GET_ALL: '/v1/visitor-histories',
     CREATE_PUBLIC: '/v1/public/visitor-histories',
+    REPORT: '/v1/visitor-histories/report',
   },
 }
