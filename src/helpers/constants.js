@@ -52,4 +52,12 @@ export const API_PATHS = {
     UPDATE: (id) => `/v1/users/${id}`,
     DELETE: (id) => `/v1/users/${id}`,
   },
+  VISITORS: {
+    GET_ALL: '/v1/visitors',
+    UPSERT_PUBLIC: '/v1/public/visitors',
+  },
+  VISITOR_HISTORIES: {
+    GET_ALL: '/v1/visitor-histories',
+    CREATE_PUBLIC: '/v1/public/visitor-histories',
+  },
 }

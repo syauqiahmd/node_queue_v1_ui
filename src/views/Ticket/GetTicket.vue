@@ -148,10 +148,130 @@
       <div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-50 p-4">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="closeModal" />
         <div
-          class="bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 rounded-2xl p-6 md:p-8 lg:p-10 w-full max-w-sm md:max-w-md relative z-10 shadow-2xl"
+          :class="[
+            'bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 rounded-2xl p-6 md:p-8 lg:p-10 w-full relative z-10 shadow-2xl',
+            modalState === 'visitor-form' ? 'max-w-md md:max-w-xl' : 'max-w-sm md:max-w-md',
+          ]"
         >
+          <!-- Visitor Info Form -->
+          <div v-if="modalState === 'visitor-form'">
+            <h3 class="text-white text-xl md:text-2xl font-light mb-2 text-center">
+              Data Pengunjung
+            </h3>
+            <p class="text-white/50 text-sm text-center mb-6 md:mb-8">
+              Silahkan isi data Anda sebelum mengambil nomor antrian.
+            </p>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-white/70 text-sm mb-1.5">
+                  Nama <span class="text-red-400">*</span>
+                </label>
+                <input
+                  v-model="visitorForm.name"
+                  @input="visitorFormErrors.name = ''"
+                  @focus="activeField = 'name'"
+                  type="text"
+                  inputmode="none"
+                  autocomplete="name"
+                  placeholder="Nama lengkap"
+                  :class="[
+                    'w-full h-12 rounded-lg bg-white/5 border px-4 text-white text-base placeholder:text-white/30 focus:outline-none focus:ring-2 touch-manipulation',
+                    activeField === 'name'
+                      ? 'border-emerald-400/60 ring-2 ring-emerald-400/30'
+                      : '',
+                    visitorFormErrors.name
+                      ? 'border-red-400/60 focus:ring-red-400/30'
+                      : 'border-white/10 focus:border-emerald-400/40 focus:ring-emerald-400/30',
+                  ]"
+                />
+                <p v-if="visitorFormErrors.name" class="mt-1 text-xs text-red-400">
+                  {{ visitorFormErrors.name }}
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-white/70 text-sm mb-1.5">
+                  Nomor HP <span class="text-red-400">*</span>
+                </label>
+                <input
+                  v-model="visitorForm.phoneNumber"
+                  @input="visitorFormErrors.phoneNumber = ''"
+                  @focus="activeField = 'phoneNumber'"
+                  type="tel"
+                  inputmode="none"
+                  autocomplete="tel"
+                  placeholder="08xxxxxxxxxx"
+                  :class="[
+                    'w-full h-12 rounded-lg bg-white/5 border px-4 text-white text-base placeholder:text-white/30 focus:outline-none focus:ring-2 touch-manipulation',
+                    activeField === 'phoneNumber'
+                      ? 'border-emerald-400/60 ring-2 ring-emerald-400/30'
+                      : '',
+                    visitorFormErrors.phoneNumber
+                      ? 'border-red-400/60 focus:ring-red-400/30'
+                      : 'border-white/10 focus:border-emerald-400/40 focus:ring-emerald-400/30',
+                  ]"
+                />
+                <p v-if="visitorFormErrors.phoneNumber" class="mt-1 text-xs text-red-400">
+                  {{ visitorFormErrors.phoneNumber }}
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-white/70 text-sm mb-1.5">Email (opsional)</label>
+                <input
+                  v-model="visitorForm.email"
+                  @input="visitorFormErrors.email = ''"
+                  @focus="activeField = 'email'"
+                  type="email"
+                  inputmode="none"
+                  autocomplete="email"
+                  placeholder="nama@email.com"
+                  :class="[
+                    'w-full h-12 rounded-lg bg-white/5 border px-4 text-white text-base placeholder:text-white/30 focus:outline-none focus:ring-2 touch-manipulation',
+                    activeField === 'email'
+                      ? 'border-emerald-400/60 ring-2 ring-emerald-400/30'
+                      : '',
+                    visitorFormErrors.email
+                      ? 'border-red-400/60 focus:ring-red-400/30'
+                      : 'border-white/10 focus:border-emerald-400/40 focus:ring-emerald-400/30',
+                  ]"
+                />
+                <p v-if="visitorFormErrors.email" class="mt-1 text-xs text-red-400">
+                  {{ visitorFormErrors.email }}
+                </p>
+              </div>
+            </div>
+
+            <!-- On-screen keyboard -->
+            <div v-if="activeField" class="mt-5 pt-5 border-t border-white/10">
+              <VirtualKeyboard
+                v-model="activeFieldValue"
+                :mode="activeField === 'phoneNumber' ? 'numeric' : 'text'"
+                @done="activeField = null"
+              />
+            </div>
+
+            <div class="flex gap-3 mt-8">
+              <button
+                @click="closeModal"
+                :disabled="submittingVisitor"
+                class="flex-1 bg-white/10 border border-white/20 text-white px-4 py-3 rounded-full text-base font-medium transition-all hover:bg-white/20 disabled:opacity-50 touch-manipulation"
+              >
+                Batal
+              </button>
+              <button
+                @click="submitVisitorForm"
+                :disabled="submittingVisitor"
+                class="flex-1 bg-gradient-to-r from-emerald-500/30 to-blue-500/30 border border-emerald-400/50 text-white px-4 py-3 rounded-full text-base font-medium transition-all duration-300 hover:bg-emerald-500/40 active:scale-95 disabled:opacity-50 touch-manipulation"
+              >
+                {{ submittingVisitor ? 'Memproses...' : 'Lanjutkan' }}
+              </button>
+            </div>
+          </div>
+
           <!-- Success -->
-          <div v-if="modalState === 'success'" class="text-center">
+          <div v-else-if="modalState === 'success'" class="text-center">
             <h3 class="text-white text-xl md:text-2xl lg:text-3xl font-light mb-6">
               Nomor Antrian Anda
             </h3>
@@ -235,23 +355,38 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useQueueStore, useServiceStore } from '@/stores'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { useQueueStore, useServiceStore, useVisitorStore, useVisitorHistoryStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import defaultOrgImage from '@/assets/images/default-organization.svg'
+import VirtualKeyboard from '@/components/common/VirtualKeyboard.vue'
 
 const showServiceNameOnCard = import.meta.env.VITE_TICKET_SHOW_SERVICE_NAME === 'true'
 const timezone = import.meta.env.VITE_TIMEZONE || 'Asia/Jakarta'
+const requireVisitorData = import.meta.env.VITE_REQUIRE_VISITOR_DATA === 'true'
 
 const currentDateTime = ref('')
 const showModal = ref(false)
-const modalState = ref(null) // 'success' | 'error'
+const modalState = ref(null) // 'visitor-form' | 'success' | 'error'
 const selectedOrg = ref(null)
 const ticketNumber = ref('')
 const waitingCount = ref(null)
 const printError = ref(false)
 const requestingServiceId = ref(null)
 const scrollContainer = ref(null)
+
+const pendingService = ref(null)
+const submittingVisitor = ref(false)
+const visitorForm = reactive({ name: '', phoneNumber: '', email: '' })
+const visitorFormErrors = reactive({ name: '', phoneNumber: '', email: '' })
+const activeField = ref(null) // 'name' | 'phoneNumber' | 'email' | null — drives the on-screen keyboard
+
+const activeFieldValue = computed({
+  get: () => (activeField.value ? visitorForm[activeField.value] : ''),
+  set: (val) => {
+    if (activeField.value) visitorForm[activeField.value] = val
+  },
+})
 
 const isTouch = !window.matchMedia('(hover: hover) and (pointer: fine)').matches
 const pointerHint = isTouch ? 'Sentuh untuk memilih' : 'Klik untuk memilih'
@@ -272,16 +407,13 @@ const { publicServices } = storeToRefs(serviceStore)
 const { fetchPublicServices } = serviceStore
 
 const queueStore = useQueueStore()
+const visitorStore = useVisitorStore()
+const visitorHistoryStore = useVisitorHistoryStore()
 const isLoading = ref(false)
 const loadError = ref('')
 
-const selectService = async (service) => {
-  if (requestingServiceId.value) return
+const createTicket = async (service, visitor = null) => {
   requestingServiceId.value = service.id
-  selectedOrg.value = service.organization
-  waitingCount.value = null
-  printError.value = false
-
   try {
     const ticket = await queueStore.requestPublicTicket({ serviceId: service.id })
     ticketNumber.value =
@@ -292,6 +424,13 @@ const selectService = async (service) => {
     modalState.value = 'success'
     showModal.value = true
     printTicket(ticket, service)
+
+    // Record the visit in the background — never blocks or fails the ticket flow.
+    if (visitor?.id && service.organization?.id) {
+      visitorHistoryStore
+        .recordVisit({ visitorId: visitor.id, organizationId: service.organization.id })
+        .catch((error) => console.error('Error recording visitor history:', error))
+    }
   } catch {
     modalState.value = 'error'
     showModal.value = true
@@ -300,9 +439,78 @@ const selectService = async (service) => {
   }
 }
 
+const selectService = async (service) => {
+  if (requestingServiceId.value || showModal.value) return
+  selectedOrg.value = service.organization
+  waitingCount.value = null
+  printError.value = false
+
+  if (requireVisitorData) {
+    pendingService.value = service
+    visitorForm.name = ''
+    visitorForm.phoneNumber = ''
+    visitorForm.email = ''
+    visitorFormErrors.name = ''
+    visitorFormErrors.phoneNumber = ''
+    visitorFormErrors.email = ''
+    activeField.value = 'name'
+    modalState.value = 'visitor-form'
+    showModal.value = true
+    return
+  }
+
+  await createTicket(service)
+}
+
+const validateVisitorForm = () => {
+  visitorFormErrors.name = ''
+  visitorFormErrors.phoneNumber = ''
+  visitorFormErrors.email = ''
+  let valid = true
+
+  if (!visitorForm.name.trim()) {
+    visitorFormErrors.name = 'Nama wajib diisi.'
+    valid = false
+  }
+  if (!visitorForm.phoneNumber.trim()) {
+    visitorFormErrors.phoneNumber = 'Nomor HP wajib diisi.'
+    valid = false
+  }
+  if (visitorForm.email.trim() && !/^\S+@\S+\.\S+$/.test(visitorForm.email.trim())) {
+    visitorFormErrors.email = 'Format email tidak valid.'
+    valid = false
+  }
+
+  return valid
+}
+
+const submitVisitorForm = async () => {
+  if (!validateVisitorForm() || !pendingService.value) return
+
+  submittingVisitor.value = true
+  try {
+    const visitor = await visitorStore.upsertVisitor({
+      name: visitorForm.name.trim(),
+      phoneNumber: visitorForm.phoneNumber.trim(),
+      email: visitorForm.email.trim(),
+    })
+    const service = pendingService.value
+    pendingService.value = null
+    activeField.value = null
+    await createTicket(service, visitor)
+  } catch (error) {
+    console.error('Error upserting visitor:', error)
+    modalState.value = 'error'
+  } finally {
+    submittingVisitor.value = false
+  }
+}
+
 const closeModal = () => {
   showModal.value = false
   modalState.value = null
+  pendingService.value = null
+  activeField.value = null
 }
 
 const updateDateTime = () => {

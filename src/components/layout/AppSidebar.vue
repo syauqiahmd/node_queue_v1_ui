@@ -13,7 +13,10 @@
     @mouseenter="!isExpanded && (isHovered = true)"
     @mouseleave="isHovered = false"
   >
-    <div v-if="!isMobileOpen" :class="['py-8 flex', !isExpanded && !isHovered ? 'lg:justify-center' : 'justify-center']">
+    <div
+      v-if="!isMobileOpen"
+      :class="['py-8 flex', !isExpanded && !isHovered ? 'lg:justify-center' : 'justify-center']"
+    >
       <router-link to="/admin">
         <img
           v-if="isExpanded || isHovered"
@@ -187,7 +190,7 @@ import {
   BarChartIcon,
 } from '../../icons'
 import { useSidebar } from '@/composables/useSidebar'
-import { TagIcon } from 'lucide-vue-next'
+import { TagIcon, Users, History } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 
@@ -204,23 +207,23 @@ const menuGroups = computed(() => {
     ADMIN: [
       {
         title: 'Main',
-        items: [
-          { icon: GridIcon, name: 'Dashboard', path: '/admin/' },
-        ],
+        items: [{ icon: GridIcon, name: 'Dashboard', path: '/admin/' }],
       },
       {
         title: 'Master Data',
         items: [
-          { icon: TagIcon,       name: 'Organizations', path: '/admin/organizations' },
-          { icon: BoxCubeIcon,   name: 'Services',      path: '/admin/services' },
-          { icon: ListIcon,      name: 'Counters',      path: '/admin/counters' },
+          { icon: TagIcon, name: 'Organizations', path: '/admin/organizations' },
+          { icon: BoxCubeIcon, name: 'Services', path: '/admin/services' },
+          { icon: ListIcon, name: 'Counters', path: '/admin/counters' },
+          { icon: Users, name: 'Visitors', path: '/admin/visitors' },
+          { icon: History, name: 'Visitor History', path: '/admin/visitor-histories' },
         ],
       },
       {
         title: 'Management',
         items: [
-          { icon: UserGroupIcon, name: 'Users',   path: '/admin/users' },
-          { icon: BarChartIcon,  name: 'Report',  path: '/admin/report' },
+          { icon: UserGroupIcon, name: 'Users', path: '/admin/users' },
+          { icon: BarChartIcon, name: 'Report', path: '/admin/report' },
         ],
       },
     ],
@@ -228,8 +231,9 @@ const menuGroups = computed(() => {
       {
         title: 'Menu',
         items: [
-          { icon: GridIcon,     name: 'Dashboard', path: '/admin/' },
-          { icon: BarChartIcon, name: 'Report',    path: '/admin/report' },
+          { icon: GridIcon, name: 'Dashboard', path: '/admin/' },
+          { icon: History, name: 'Visitor History', path: '/admin/visitor-histories' },
+          { icon: BarChartIcon, name: 'Report', path: '/admin/report' },
         ],
       },
     ],
