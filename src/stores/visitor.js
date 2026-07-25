@@ -6,6 +6,7 @@ export const useVisitorStore = defineStore('visitor', {
   state: () => ({
     visitors: [],
     loading: false,
+    downloadingReport: false,
     pagination: {
       page: 1,
       pageSize: DEFAULT_PAGE_SIZE,
@@ -54,6 +55,51 @@ export const useVisitorStore = defineStore('visitor', {
     async upsertVisitor(visitor) {
       const { data } = await request.post(API_PATHS.VISITORS.UPSERT_PUBLIC, visitor)
       return data?.data
+    },
+    async downloadReport({
+      name = '',
+      phoneNumber = '',
+      email = '',
+      organizationId = '',
+      startDate,
+      endDate = null,
+    }) {
+      this.downloadingReport = true
+      try {
+        const payload = { startDate }
+        if (name) payload.name = name
+        if (phoneNumber) payload.phoneNumber = phoneNumber
+        if (email) payload.email = email
+        if (organizationId) payload.organizationId = organizationId
+        if (endDate) payload.endDate = endDate
+
+        const response = await request.post(API_PATHS.VISITORS.REPORT, payload, {
+          responseType: 'blob',
+          headers: { accept: 'text/csv' },
+        })
+
+        const blob = response.data
+        const disposition = response.headers?.['content-disposition'] || ''
+        let filename = 'visitors.csv'
+        const match = /filename\*=UTF-8''([^;]+)|filename=(?:"([^"]+)"|([^;]+))/i.exec(disposition)
+        if (match) {
+          filename = decodeURIComponent(match[1] || match[2] || match[3])
+        }
+
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+      } catch (error) {
+        console.error('Error downloading visitor report:', error)
+        throw error
+      } finally {
+        this.downloadingReport = false
+      }
     },
   },
 })
