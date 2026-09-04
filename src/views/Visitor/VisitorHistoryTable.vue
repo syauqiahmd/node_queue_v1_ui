@@ -171,10 +171,13 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
 import VueFlatpickr from 'vue-flatpickr-component'
 import PageTitle from '@/components/common/PageTitle.vue'
 import SortArrowIcon from '@/icons/SortArrowIcon.vue'
 import { useVisitorHistoryStore, useOrganizationStore, useAuthStore } from '@/stores'
+
+dayjs.extend(utc)
 import { storeToRefs } from 'pinia'
 import { showApiErrorToast, showSuccessToast } from '@/helpers/sweetalert'
 import ComponentCard from '@/components/common/ComponentCard.vue'
@@ -263,8 +266,8 @@ const goToPage = (page) => {
 
 watch(visitDate, () => loadHistories())
 
-const formatDate = (value) => (value ? dayjs(value).format('DD MMM YYYY') : '-')
-const formatDateTime = (value) => (value ? dayjs(value).format('DD MMM YYYY, HH:mm') : '-')
+const formatDate = (value) => (value ? dayjs.utc(value).format('DD MMM YYYY') : '-')
+const formatDateTime = (value) => (value ? dayjs.utc(value).format('DD MMM YYYY, HH:mm') : '-')
 
 const handleDownloadReport = async ({ startDate, endDate }) => {
   try {

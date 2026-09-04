@@ -141,10 +141,13 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
 import PageTitle from '@/components/common/PageTitle.vue'
 import SortArrowIcon from '@/icons/SortArrowIcon.vue'
 import { useVisitorStore, useOrganizationStore } from '@/stores'
 import { storeToRefs } from 'pinia'
+
+dayjs.extend(utc)
 import { showApiErrorToast, showSuccessToast } from '@/helpers/sweetalert'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import PaginationBarAdmin from '@/components/common/PaginationBarAdmin.vue'
@@ -211,7 +214,7 @@ const goToPage = (page) => {
   loadVisitors(page)
 }
 
-const formatDateTime = (value) => (value ? dayjs(value).format('DD MMM YYYY, HH:mm') : '-')
+const formatDateTime = (value) => (value ? dayjs.utc(value).format('DD MMM YYYY, HH:mm') : '-')
 
 const handleDownloadReport = async ({ startDate, endDate }) => {
   try {
