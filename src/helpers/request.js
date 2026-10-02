@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/auth'
 import router from '../router'
 import { useLoadingBar } from '../composables/useLoadingBar'
 import { API_PATHS } from './constants'
+import { reportApiError } from './observability'
 
 const { start: startLoading, finish: finishLoading } = useLoadingBar()
 
@@ -39,6 +40,7 @@ request.interceptors.response.use(
   },
   (error) => {
     finishLoading()
+    reportApiError(error)
     if (error.config?.silent) {
       error._swalShown = true
       return Promise.reject(error)
