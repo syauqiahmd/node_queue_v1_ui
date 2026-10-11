@@ -14,6 +14,9 @@ if (API_BASE_URL && API_BASE_URL.startsWith('localhost')) {
   API_BASE_URL = `http://${API_BASE_URL}`
 }
 
+// Several requests can fail with 401 at once; show the session popup and log out only once.
+let handlingSessionExpiry = false
+
 const request = axios.create({
   baseURL: API_BASE_URL || '/api',
 })
@@ -58,21 +61,26 @@ request.interceptors.response.use(
       // Login endpoint returning 401 means invalid credentials — let the
       // auth store handle it inline; don't show the session-expired popup.
       const isLoginRequest = error.config?.url?.includes(API_PATHS.AUTH.LOGIN)
-      if (!isLoginRequest) {
+      if (!isLoginRequest && !handlingSessionExpiry) {
+        handlingSessionExpiry = true
         const authStore = useAuthStore()
         const errorMessage =
           error.response?.data?.error?.message || 'Your session has expired. Please log in again.'
         const errorTitle = error.response?.data?.error?.code || 'Unauthorized'
-        error._swalShown = true
         Swal.fire({
           icon: 'error',
           title: errorTitle,
           text: errorMessage,
-        }).then(async () => {
-          await authStore.logout()
-          router.push('/login')
         })
+          .then(async () => {
+            await authStore.logout()
+            await router.push('/login')
+          })
+          .finally(() => {
+            handlingSessionExpiry = false
+          })
       }
+      error._swalShown = true
       return Promise.reject(error)
     }
 

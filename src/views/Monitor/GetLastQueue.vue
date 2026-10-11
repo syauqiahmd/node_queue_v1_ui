@@ -265,7 +265,25 @@ const badgeStyles = [
 ]
 
 let socket = null
+let socketClosedByUser = false
+let reconnectDelay = 1000
+const MAX_RECONNECT_DELAY = 10000
+
+const startPolling = () => {
+  if (!pollId) pollId = setInterval(fetchQueues, 5000)
+}
+
+const scheduleReconnect = () => {
+  if (socketClosedByUser || reconnectTimer) return
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null
+    connectSocket()
+  }, reconnectDelay)
+  reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY)
+}
+
 const connectSocket = () => {
+  if (socketClosedByUser) return
   const explicitWs = import.meta.env.VITE_WS_URL
   let url = explicitWs
   if (!url) {
@@ -277,8 +295,6 @@ const connectSocket = () => {
     url = base.replace(/^https?/, secure ? 'wss' : 'ws')
   }
   if (!url && import.meta.env.DEV) url = 'ws://localhost:8080'
-  let delay = 1000
-  const maxDelay = 10000
   try {
     socket = new WebSocket(url)
   } catch {
@@ -288,28 +304,19 @@ const connectSocket = () => {
   socket.onopen = () => {
     connected.value = true
     connectionStatus.value = 'connected'
-    delay = 1000
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
-    }
+    reconnectDelay = 1000
     if (pollId) {
       clearInterval(pollId)
       pollId = null
     }
   }
+  // A failed connection fires onerror then onclose; reconnect only from onclose.
   socket.onclose = () => {
     connected.value = false
+    if (socketClosedByUser) return
     connectionStatus.value = 'reconnecting'
-    setTimeout(connectSocket, delay)
-    delay = Math.min(delay * 2, maxDelay)
-    if (!pollId) pollId = setInterval(fetchQueues, 5000)
-  }
-  socket.onerror = () => {
-    connectionStatus.value = 'reconnecting'
-    setTimeout(connectSocket, delay)
-    delay = Math.min(delay * 2, maxDelay)
-    if (!pollId) pollId = setInterval(fetchQueues, 5000)
+    scheduleReconnect()
+    startPolling()
   }
   socket.onmessage = (ev) => {
     try {
@@ -359,6 +366,11 @@ const connectSocket = () => {
 }
 
 const disconnectSocket = () => {
+  socketClosedByUser = true
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
   if (socket) {
     try {
       socket.close()

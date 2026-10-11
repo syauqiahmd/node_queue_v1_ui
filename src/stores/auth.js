@@ -46,7 +46,8 @@ export const useAuthStore = defineStore('auth', {
     async logout() {
       if (!this.accessToken) return
       try {
-        await request.post(API_PATHS.AUTH.LOGOUT)
+        // Silent: an expired session makes this 401, which must not re-trigger the session popup.
+        await request.post(API_PATHS.AUTH.LOGOUT, null, { silent: true })
       } catch {
         // proceed with local cleanup regardless
       }

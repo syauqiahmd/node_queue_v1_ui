@@ -245,8 +245,22 @@ const counterOptions = computed(() =>
 )
 
 let socket = null
+let reconnectTimer = null
+let socketClosedByUser = false
+let reconnectDelay = 1000
+const MAX_RECONNECT_DELAY = 10000
+
+const scheduleReconnect = () => {
+  if (socketClosedByUser || reconnectTimer) return
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null
+    connectSocket()
+  }, reconnectDelay)
+  reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY)
+}
 
 const connectSocket = () => {
+  if (socketClosedByUser) return
   const explicitWs = import.meta.env.VITE_WS_URL
   let url = explicitWs
   if (!url) {
@@ -258,20 +272,12 @@ const connectSocket = () => {
     url = base.replace(/^https?/, secure ? 'wss' : 'ws')
   }
   if (!url && import.meta.env.DEV) url = 'ws://localhost:8080'
-  let delay = 1000
-  const maxDelay = 10000
   socket = new WebSocket(url)
   socket.onopen = () => {
-    delay = 1000
+    reconnectDelay = 1000
   }
-  socket.onclose = () => {
-    setTimeout(connectSocket, delay)
-    delay = Math.min(delay * 2, maxDelay)
-  }
-  socket.onerror = () => {
-    setTimeout(connectSocket, delay)
-    delay = Math.min(delay * 2, maxDelay)
-  }
+  // A failed connection fires onerror then onclose; reconnect only from onclose.
+  socket.onclose = scheduleReconnect
   socket.onmessage = (ev) => {
     try {
       const parsed = JSON.parse(ev.data)
@@ -301,6 +307,11 @@ const connectSocket = () => {
 }
 
 const disconnectSocket = () => {
+  socketClosedByUser = true
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
   if (socket) {
     try {
       socket.close()
@@ -311,7 +322,7 @@ const disconnectSocket = () => {
 }
 
 const fetchQueueData = async () => {
-  if (selectedServiceId.value) {
+  if (selectedServiceId.value && authStore.isAuthenticated) {
     await fetchQueueList(selectedServiceId.value, { status: 'in-progress' })
     await fetchQueueSummary(selectedServiceId.value, {})
     hasNewTickets.value = !!(queueSummary.value && queueSummary.value.totalRecords > 0)
