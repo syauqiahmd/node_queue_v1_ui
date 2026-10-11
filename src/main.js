@@ -1,3 +1,4 @@
+import './helpers/polyfills'
 import { initObservability, attachVueErrorHandler } from './helpers/observability'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
