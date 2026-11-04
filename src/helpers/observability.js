@@ -38,9 +38,9 @@ export function attachVueErrorHandler(app) {
     })
     if (previous) {
       previous(err, instance, info)
-    } else {
-      console.error(err)
+      return
     }
+    console.error(err)
   }
 }
 

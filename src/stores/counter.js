@@ -11,10 +11,20 @@ export const useCounterStore = defineStore('counter', {
       page: 1,
       pageSize: DEFAULT_PAGE_SIZE,
       total: 0,
-    }
+    },
   }),
   actions: {
-    async fetchCounters({ page = 1, pageSize = DEFAULT_PAGE_SIZE, search = '', searchBy = 'counterNumber', sortBy = 'counterNumber', sortOrder = 'asc', isActive = '', serviceId = '', pagination = true } = {}) {
+    async fetchCounters({
+      page = 1,
+      pageSize = DEFAULT_PAGE_SIZE,
+      search = '',
+      searchBy = 'counterNumber',
+      sortBy = 'counterNumber',
+      sortOrder = 'asc',
+      isActive = '',
+      serviceId = '',
+      pagination = true,
+    } = {}) {
       this.loading = true
       try {
         const params = new URLSearchParams()
@@ -37,7 +47,7 @@ export const useCounterStore = defineStore('counter', {
         if (serviceId) {
           params.append('serviceId', serviceId)
         }
-        
+
         const response = await request.get(`${API_PATHS.COUNTERS.GET_ALL}?${params.toString()}`)
         this.counters = response.data.data.data
         this.pagination.page = page
@@ -94,6 +104,6 @@ export const useCounterStore = defineStore('counter', {
       } finally {
         this.loading = false
       }
-    }
-  }
+    },
+  },
 })

@@ -170,6 +170,78 @@
         </div>
       </div>
     </ComponentCard>
+
+    <ComponentCard v-if="selectedServiceId">
+      <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+        Waiting Queue ({{ waitingList.length }})
+      </h3>
+      <div
+        class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]"
+      >
+        <div class="max-w-full overflow-x-auto custom-scrollbar">
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b border-gray-200 dark:border-gray-700">
+                <th class="px-5 py-3 text-left w-1/20 sm:px-6">
+                  <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">#</p>
+                </th>
+                <th class="px-5 py-3 text-left sm:px-6">
+                  <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
+                    Ticket Number
+                  </p>
+                </th>
+                <th class="px-5 py-3 text-left sm:px-6">
+                  <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Priority</p>
+                </th>
+                <th class="px-5 py-3 text-left sm:px-6">
+                  <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Actions</p>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-if="waitingList.length === 0">
+                <td colspan="4" class="px-5 py-10 text-center">
+                  <p class="text-sm text-gray-400 dark:text-gray-500">No waiting tickets.</p>
+                </td>
+              </tr>
+              <tr
+                v-else
+                v-for="(ticket, index) in waitingList"
+                :key="ticket.id"
+                class="border-t border-gray-100 dark:border-gray-800"
+              >
+                <td class="px-5 py-4 sm:px-6">
+                  <p class="text-gray-500 text-theme-sm dark:text-gray-400">{{ index + 1 }}</p>
+                </td>
+                <td class="px-5 py-4 sm:px-6">
+                  <p class="text-gray-500 text-theme-sm dark:text-gray-400">
+                    {{ ticket.prefix }}-{{ ticket.queueNumber }}
+                  </p>
+                </td>
+                <td class="px-5 py-4 sm:px-6">
+                  <span
+                    v-if="ticket.isPriority"
+                    class="rounded-full px-2 py-0.5 text-theme-xs font-medium bg-error-50 text-error-700 dark:bg-error-500/15 dark:text-error-500"
+                  >
+                    Priority
+                  </span>
+                  <span v-else class="text-gray-400 text-theme-sm dark:text-gray-500">-</span>
+                </td>
+                <td class="px-5 py-4 sm:px-6">
+                  <button
+                    @click="() => prioritize(ticket)"
+                    :disabled="ticket.isPriority || prioritizingIds.includes(ticket.id)"
+                    class="flex items-center px-2 py-1 rounded text-sm bg-warning-500 text-white hover:bg-warning-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {{ prioritizingIds.includes(ticket.id) ? 'Wait...' : 'Prioritize' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </ComponentCard>
   </div>
 </template>
 
@@ -194,8 +266,9 @@ const authStore = useAuthStore()
 const isAdmin = computed(() => authStore.isAdmin)
 
 const queueStore = useQueueStore()
-const { queueList, queueSummary } = storeToRefs(queueStore)
-const { callNextTicket, performTicketAction, fetchQueueList, fetchQueueSummary } = queueStore
+const { queueList, waitingList } = storeToRefs(queueStore)
+const { callNextTicket, performTicketAction, fetchQueueList, fetchWaitingList, prioritizeTicket } =
+  queueStore
 
 const organizationStore = useOrganizationStore()
 const { organizations } = storeToRefs(organizationStore)
@@ -217,6 +290,7 @@ const COOLDOWN_MS = 2000
 const callNextCooldown = ref(false)
 const recallingIds = ref([])
 const resolvingIds = ref([])
+const prioritizingIds = ref([])
 let callNextTimer = null
 const actionTimers = {}
 
@@ -245,6 +319,7 @@ const counterOptions = computed(() =>
 )
 
 let socket = null
+const recalledIds = new Set()
 let reconnectTimer = null
 let socketClosedByUser = false
 let reconnectDelay = 1000
@@ -281,29 +356,44 @@ const connectSocket = () => {
   socket.onmessage = (ev) => {
     try {
       const parsed = JSON.parse(ev.data)
-      const event = parsed && parsed.event ? parsed.event : null
-      const data = parsed && parsed.data ? parsed.data : parsed
-      if (event === 'ticket:created') {
-        showSuccessToast(`New ticket ${data.prefix}-${data.queueNumber} created!`)
-        if (data.serviceId === selectedServiceId.value) hasNewTickets.value = true
-        playBeep()
-        fetchQueueData()
-      } else if (event === 'ticket:called') {
-        showSuccessToast(
-          `Ticket ${data.queueNumber} called by ${data.calledBy || data.counterNumber}!`,
-        )
-        playBeep()
-        fetchQueueData()
-      } else if (event === 'ticket:resolved') {
-        fetchQueueData()
-      } else if (event === 'ticket:prioritized') {
-        showSuccessToast(`Ticket ${data.id} prioritized!`)
-        fetchQueueData()
-      }
+      const data = parsed?.data ?? parsed
+      // The websocket service sends every event to every client; only react to the selected
+      // service. Events without serviceId (older API) are kept so nothing is silently dropped.
+      if (data?.serviceId && data.serviceId !== selectedServiceId.value) return
+      socketEventHandlers[parsed?.event]?.(data)
     } catch (err) {
       console.error('Error processing message:', err)
     }
   }
+}
+
+const socketEventHandlers = {
+  'ticket:created': (data) => {
+    showSuccessToast(`New ticket ${data.prefix}-${data.queueNumber} created!`)
+    hasNewTickets.value = true
+    playBeep()
+    fetchQueueData()
+  },
+  // A recall is followed by `ticket:called` for the same ticket; that event refreshes the list,
+  // so only remember it here to word the toast correctly.
+  'ticket:recalled': (data) => {
+    recalledIds.add(data.id)
+  },
+  'ticket:called': (data) => {
+    const by = data.calledBy || data.counterNumber
+    const verb = recalledIds.delete(data.id) ? 'recalled' : 'called'
+    showSuccessToast(`Ticket ${data.queueNumber} ${verb} by ${by}!`)
+    playBeep()
+    fetchQueueData()
+  },
+  'ticket:resolved': () => {
+    fetchQueueData()
+  },
+  'ticket:prioritized': (data) => {
+    const label = data.prefix ? `${data.prefix}-${data.queueNumber}` : 'A ticket'
+    showSuccessToast(`${label} prioritized!`)
+    fetchQueueData()
+  },
 }
 
 const disconnectSocket = () => {
@@ -324,8 +414,8 @@ const disconnectSocket = () => {
 const fetchQueueData = async () => {
   if (selectedServiceId.value && authStore.isAuthenticated) {
     await fetchQueueList(selectedServiceId.value, { status: 'in-progress' })
-    await fetchQueueSummary(selectedServiceId.value, {})
-    hasNewTickets.value = !!(queueSummary.value && queueSummary.value.totalRecords > 0)
+    await fetchWaitingList(selectedServiceId.value)
+    hasNewTickets.value = waitingList.value.length > 0
   }
 }
 
@@ -399,6 +489,20 @@ const recallTicket = async (ticket) => {
   }
 }
 
+const prioritize = async (ticket) => {
+  if (prioritizingIds.value.includes(ticket.id)) return
+  prioritizingIds.value = [...prioritizingIds.value, ticket.id]
+  try {
+    await prioritizeTicket(ticket.id)
+    showSuccessToast(`Ticket ${ticket.prefix}-${ticket.queueNumber} prioritized!`)
+    await fetchQueueData()
+  } catch (error) {
+    showApiErrorToast(error, 'Failed to prioritize ticket.')
+  } finally {
+    prioritizingIds.value = prioritizingIds.value.filter((id) => id !== ticket.id)
+  }
+}
+
 const getStatus = (ticket) => {
   if (ticket.isResolved) return 'completed'
   if (ticket.isCall) return 'in-progress'
@@ -410,56 +514,39 @@ const getCounterNumber = (counterId) => {
   return counter ? counter.counterNumber : 'N/A'
 }
 
+// Admins start on the first active organization; users are bound to their own.
+const resolveOrganizationId = async () => {
+  if (!isAdmin.value) return authStore.user?.organization?.organizationId
+  await fetchOrganizations({ pagination: false, sortBy: 'name', sortOrder: 'asc' })
+  return organizations.value.find((o) => o.isActive)?.id
+}
+
+const selectFirstServiceAndCounter = async (orgId) => {
+  await fetchServices({
+    pagination: false,
+    organizationId: orgId,
+    isActive: true,
+    sortBy: 'name',
+    sortOrder: 'asc',
+  })
+  const firstActiveService = services.value.find((s) => s.isActive)
+  if (!firstActiveService) return
+  selectedServiceId.value = firstActiveService.id
+  await fetchCounters({
+    pagination: false,
+    serviceId: selectedServiceId.value,
+    isActive: true,
+    sortBy: 'counterNumber',
+    sortOrder: 'asc',
+  })
+  selectedCounterId.value = counters.value.find((c) => c.isActive)?.id ?? null
+}
+
 onMounted(async () => {
-  if (isAdmin.value) {
-    await fetchOrganizations({ pagination: true, pageSize: 25, sortBy: 'name', sortOrder: 'asc' })
-    const firstActiveOrg = organizations.value.find((o) => o.isActive)
-    if (firstActiveOrg) {
-      selectedOrganizationId.value = firstActiveOrg.id
-      await fetchServices({
-        pagination: false,
-        organizationId: selectedOrganizationId.value,
-        isActive: true,
-        sortBy: 'name',
-        sortOrder: 'asc',
-      })
-      const firstActiveService = services.value.find((s) => s.isActive)
-      if (firstActiveService) {
-        selectedServiceId.value = firstActiveService.id
-        await fetchCounters({
-          pagination: false,
-          serviceId: selectedServiceId.value,
-          isActive: true,
-          sortBy: 'counterNumber',
-          sortOrder: 'asc',
-        })
-        selectedCounterId.value = counters.value.find((c) => c.isActive)?.id ?? null
-      }
-    }
-  } else {
-    const orgId = authStore.user?.organization?.organizationId
-    if (orgId) {
-      selectedOrganizationId.value = orgId
-      await fetchServices({
-        pagination: false,
-        organizationId: orgId,
-        isActive: true,
-        sortBy: 'name',
-        sortOrder: 'asc',
-      })
-      const firstActiveService = services.value.find((s) => s.isActive)
-      if (firstActiveService) {
-        selectedServiceId.value = firstActiveService.id
-        await fetchCounters({
-          pagination: false,
-          serviceId: selectedServiceId.value,
-          isActive: true,
-          sortBy: 'counterNumber',
-          sortOrder: 'asc',
-        })
-        selectedCounterId.value = counters.value.find((c) => c.isActive)?.id ?? null
-      }
-    }
+  const orgId = await resolveOrganizationId()
+  if (orgId) {
+    selectedOrganizationId.value = orgId
+    await selectFirstServiceAndCounter(orgId)
   }
   connectSocket()
   fetchQueueData()

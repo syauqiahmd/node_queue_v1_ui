@@ -34,6 +34,15 @@ export default defineConfig([
       'prefer-const':  'error',
       'no-var':        'error',
       'eqeqeq':        ['error', 'always', { null: 'ignore' }],
+      // Team convention: no else / else-if in script code; use early returns and guard clauses.
+      // (Template v-else / v-else-if are directives, not statements, so they aren't affected.)
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'IfStatement[alternate]',
+          message: 'Avoid else; use an early return or a guard clause.',
+        },
+      ],
 
       // Vue quality
       'vue/multi-word-component-names':      'off',

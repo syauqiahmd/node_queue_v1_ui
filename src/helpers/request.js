@@ -36,13 +36,49 @@ request.interceptors.request.use(
   },
 )
 
+// Downloads use responseType 'blob', so an error body arrives as a Blob. Parse it back to JSON
+// so the API's error message (e.g. a date-range validation) reaches the user.
+const parseBlobErrorBody = async (error) => {
+  const data = error.response?.data
+  if (typeof Blob === 'undefined' || !(data instanceof Blob)) return
+  try {
+    error.response.data = JSON.parse(await data.text())
+  } catch {
+    // Not JSON; leave the body as is.
+  }
+}
+
+// Footer link for the generic error popup: copies the transaction ID when the API sent one,
+// otherwise the whole error response.
+const buildErrorFooter = (error, transactionId) => {
+  const copyOnClick = (id, text) => () => {
+    document.getElementById(id).addEventListener('click', (e) => {
+      e.preventDefault()
+      navigator.clipboard.writeText(text)
+      Swal.showValidationMessage('Copied to clipboard!')
+    })
+  }
+  if (transactionId) {
+    return {
+      footerContent: `<a href="#" id="copy-transaction-id">Copy Transaction ID: ${transactionId}</a>`,
+      didOpenFunction: copyOnClick('copy-transaction-id', transactionId),
+    }
+  }
+  const fullErrorResponse = JSON.stringify(error.response?.data || error.response, null, 2)
+  return {
+    footerContent: `<a href="#" id="copy-full-error">Copy Full Error Response</a>`,
+    didOpenFunction: copyOnClick('copy-full-error', fullErrorResponse),
+  }
+}
+
 request.interceptors.response.use(
   (response) => {
     finishLoading()
     return response
   },
-  (error) => {
+  async (error) => {
     finishLoading()
+    await parseBlobErrorBody(error)
     reportApiError(error)
     if (error.config?.silent) {
       error._swalShown = true
@@ -54,6 +90,31 @@ request.interceptors.response.use(
       const code = error.response?.data?.error?.code || 'Not Found'
       error._swalShown = true
       Swal.fire({ icon: 'error', title: code, text: message })
+      return Promise.reject(error)
+    }
+
+    if (error.response && error.response.status === 403) {
+      error._swalShown = true
+      Swal.fire({
+        icon: 'error',
+        title: 'Access denied',
+        text:
+          error.response?.data?.error?.message ||
+          'You do not have permission to perform this action.',
+      })
+      return Promise.reject(error)
+    }
+
+    if (error.response && error.response.status === 429) {
+      // Mostly hit on the public kiosk, so the message is in Indonesian.
+      error._swalShown = true
+      Swal.fire({
+        icon: 'warning',
+        title: 'Mohon tunggu sebentar',
+        text: 'Terlalu banyak permintaan. Silakan coba lagi dalam 1 menit.',
+        timer: 5000,
+        timerProgressBar: true,
+      })
       return Promise.reject(error)
     }
 
@@ -84,30 +145,8 @@ request.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    let footerContent
-    let didOpenFunction
     const transactionId = error.response?.data?.transactionId
-
-    if (transactionId) {
-      footerContent = `<a href="#" id="copy-transaction-id">Copy Transaction ID: ${transactionId}</a>`
-      didOpenFunction = () => {
-        document.getElementById('copy-transaction-id').addEventListener('click', (e) => {
-          e.preventDefault()
-          navigator.clipboard.writeText(transactionId)
-          Swal.showValidationMessage('Copied to clipboard!')
-        })
-      }
-    } else {
-      const fullErrorResponse = JSON.stringify(error.response?.data || error.response, null, 2)
-      footerContent = `<a href="#" id="copy-full-error">Copy Full Error Response</a>`
-      didOpenFunction = () => {
-        document.getElementById('copy-full-error').addEventListener('click', (e) => {
-          e.preventDefault()
-          navigator.clipboard.writeText(fullErrorResponse)
-          Swal.showValidationMessage('Copied to clipboard!')
-        })
-      }
-    }
+    const { footerContent, didOpenFunction } = buildErrorFooter(error, transactionId)
 
     error._swalShown = true
     Swal.fire({

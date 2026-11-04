@@ -61,12 +61,12 @@ const breadcrumbs = computed(() => {
   if (afterAdmin.length === 1) {
     // List page — current, not a link
     crumbs.push({ label: resource.label, to: null })
-  } else {
-    // Create / edit — parent is a link, current uses route meta title
-    crumbs.push({ label: resource.label, to: resource.path })
-    crumbs.push({ label: route.meta?.title || afterAdmin.slice(1).join('/'), to: null })
+    return crumbs
   }
 
+  // Create / edit — parent is a link, current uses route meta title
+  crumbs.push({ label: resource.label, to: resource.path })
+  crumbs.push({ label: route.meta?.title || afterAdmin.slice(1).join('/'), to: null })
   return crumbs
 })
 </script>

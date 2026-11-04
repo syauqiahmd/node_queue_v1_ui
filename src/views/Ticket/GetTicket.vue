@@ -377,6 +377,10 @@ const scrollContainer = ref(null)
 
 const pendingService = ref(null)
 const submittingVisitor = ref(false)
+// Same rule as the API's phoneNormalizer: 0/62/+62, then 8 followed by 7–11 digits.
+const PHONE_PATTERN = /^(?:\+62|62|0)8\d{7,11}$/
+// Dot-separated domain labels keep this linear (the old /^\S+@\S+\.\S+$/ could backtrack).
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/
 const visitorForm = reactive({ name: '', phoneNumber: '', email: '' })
 const visitorFormErrors = reactive({ name: '', phoneNumber: '', email: '' })
 const activeField = ref(null) // 'name' | 'phoneNumber' | 'email' | null — drives the on-screen keyboard
@@ -462,6 +466,14 @@ const selectService = async (service) => {
   await createTicket(service)
 }
 
+const phoneNumberError = (value) => {
+  if (!value.trim()) return 'Nomor HP wajib diisi.'
+  if (!PHONE_PATTERN.test(value.trim().replace(/[\s-]/g, ''))) {
+    return 'Format nomor HP tidak valid (contoh: 081234567890).'
+  }
+  return ''
+}
+
 const validateVisitorForm = () => {
   visitorFormErrors.name = ''
   visitorFormErrors.phoneNumber = ''
@@ -472,11 +484,9 @@ const validateVisitorForm = () => {
     visitorFormErrors.name = 'Nama wajib diisi.'
     valid = false
   }
-  if (!visitorForm.phoneNumber.trim()) {
-    visitorFormErrors.phoneNumber = 'Nomor HP wajib diisi.'
-    valid = false
-  }
-  if (visitorForm.email.trim() && !/^\S+@\S+\.\S+$/.test(visitorForm.email.trim())) {
+  visitorFormErrors.phoneNumber = phoneNumberError(visitorForm.phoneNumber)
+  if (visitorFormErrors.phoneNumber) valid = false
+  if (visitorForm.email.trim() && !EMAIL_PATTERN.test(visitorForm.email.trim())) {
     visitorFormErrors.email = 'Format email tidak valid.'
     valid = false
   }

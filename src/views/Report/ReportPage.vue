@@ -75,7 +75,7 @@ import StatusSelect from '@/components/common/StatusSelect.vue'
 import VueFlatpickr from 'vue-flatpickr-component'
 import { useOrganizationStore, useServiceStore, useReportStore, useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
-import { showSuccessToast, showErrorAlert, showApiErrorToast } from '@/helpers/sweetalert'
+import { showSuccessToast, showApiErrorToast } from '@/helpers/sweetalert'
 
 const authStore = useAuthStore()
 const isAdmin = computed(() => authStore.isAdmin)
@@ -125,23 +125,27 @@ const endFpConfig = computed(() => ({
     : undefined,
 }))
 
-onMounted(async () => {
+// Admins pick any organization (none preselected); users are bound to their own.
+const initOrganization = async () => {
   if (isAdmin.value) {
-    await fetchOrganizations({ pagination: true, pageSize: 25, sortBy: 'name', sortOrder: 'asc' })
+    await fetchOrganizations({ pagination: false, sortBy: 'name', sortOrder: 'asc' })
     selectedOrganizationId.value = null
-  } else {
-    const orgId = authStore.user?.organization?.organizationId
-    if (orgId) {
-      selectedOrganizationId.value = orgId
-      await fetchServices({
-        pagination: false,
-        organizationId: orgId,
-        isActive: true,
-        sortBy: 'name',
-        sortOrder: 'asc',
-      })
-    }
+    return
   }
+  const orgId = authStore.user?.organization?.organizationId
+  if (!orgId) return
+  selectedOrganizationId.value = orgId
+  await fetchServices({
+    pagination: false,
+    organizationId: orgId,
+    isActive: true,
+    sortBy: 'name',
+    sortOrder: 'asc',
+  })
+}
+
+onMounted(async () => {
+  await initOrganization()
   startDate.value = dayjs().format('YYYY-MM-DD')
 })
 
@@ -176,20 +180,8 @@ const downloadReport = async () => {
     })
     showSuccessToast('Report download started')
   } catch (error) {
-    try {
-      const blob = error?.response?.data
-      if (blob && typeof blob === 'object' && 'text' in blob) {
-        const text = await blob.text()
-        const json = JSON.parse(text)
-        const code = json?.error?.code || 'Error'
-        const message = json?.error?.message || 'Failed to download report'
-        showErrorAlert(code, message)
-      } else {
-        showApiErrorToast(error, 'Failed to download report.')
-      }
-    } catch {
-      showApiErrorToast(error, 'Failed to download report.')
-    }
+    // The request interceptor already parsed the blob error body and showed the API message.
+    showApiErrorToast(error, 'Failed to download report.')
   }
 }
 </script>

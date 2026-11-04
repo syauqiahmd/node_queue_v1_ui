@@ -44,6 +44,7 @@ const router = createRouter({
           component: () => import('../views/Organization/OrganizationTable.vue'),
           meta: {
             title: 'Organization',
+            requiresAdmin: true,
           },
         },
         {
@@ -70,6 +71,7 @@ const router = createRouter({
           component: () => import('../views/User/UserTable.vue'),
           meta: {
             title: 'User',
+            requiresAdmin: true,
           },
         },
         {
@@ -165,6 +167,7 @@ const router = createRouter({
           component: () => import('../views/Activity/CronActivity.vue'),
           meta: {
             title: 'Activity',
+            requiresAdmin: true,
           },
         },
         {
@@ -203,27 +206,33 @@ const router = createRouter({
 })
 
 import { useAuthStore } from '../stores/auth.js'
+import { showErrorToast } from '../helpers/sweetalert'
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   const baseTitle = 'QMS'
   const pageTitle = to.meta.title ? `${baseTitle} - ${to.meta.title}` : `${baseTitle}`
   document.title = pageTitle.trim()
 
-  if (to.path.startsWith('/admin')) {
-    if (!authStore.isAuthenticated) {
-      next('/login')
-      return
-    }
-    const role = authStore.user?.role || authStore.user?.roleName || null
-    if (to.meta?.requiresAdmin && role !== 'ADMIN') {
-      next('/admin')
-      return
-    }
+  if (!to.path.startsWith('/admin')) {
     next()
-  } else {
-    next()
+    return
   }
+  if (!authStore.isAuthenticated) {
+    next('/login')
+    return
+  }
+  if (!(await authStore.validateSession())) {
+    showErrorToast('Your session has expired. Please log in again.')
+    next('/login')
+    return
+  }
+  const role = authStore.user?.role || authStore.user?.roleName || null
+  if (to.meta?.requiresAdmin && role !== 'ADMIN') {
+    next('/admin')
+    return
+  }
+  next()
 })
 
 export default router

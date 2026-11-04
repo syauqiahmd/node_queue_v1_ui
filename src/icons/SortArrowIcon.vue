@@ -19,5 +19,5 @@ defineProps({
     type: String,
     default: 'asc', // 'asc' or 'desc'
   },
-});
+})
 </script>

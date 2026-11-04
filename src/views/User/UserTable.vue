@@ -13,19 +13,37 @@
       <div class="flex flex-wrap gap-2 mb-4">
         <button
           @click="setStatusFilter('')"
-          :class="statusFilter === '' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          :class="
+            statusFilter === ''
+              ? 'bg-brand-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'
+          "
           class="px-3 py-1.5 text-xs font-medium rounded-full transition"
-        >All</button>
+        >
+          All
+        </button>
         <button
           @click="setStatusFilter(true)"
-          :class="statusFilter === true ? 'bg-success-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          :class="
+            statusFilter === true
+              ? 'bg-success-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'
+          "
           class="px-3 py-1.5 text-xs font-medium rounded-full transition"
-        >Active</button>
+        >
+          Active
+        </button>
         <button
           @click="setStatusFilter(false)"
-          :class="statusFilter === false ? 'bg-error-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          :class="
+            statusFilter === false
+              ? 'bg-error-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'
+          "
           class="px-3 py-1.5 text-xs font-medium rounded-full transition"
-        >Inactive</button>
+        >
+          Inactive
+        </button>
       </div>
 
       <div
@@ -92,7 +110,10 @@
               <!-- Empty state -->
               <tr v-else-if="!loading && users.length === 0">
                 <td :colspan="6">
-                  <EmptyState message="No users found" description="Try adjusting your search or filter criteria." />
+                  <EmptyState
+                    message="No users found"
+                    description="Try adjusting your search or filter criteria."
+                  />
                 </td>
               </tr>
 
@@ -210,7 +231,12 @@ import PageTitle from '@/components/common/PageTitle.vue'
 import SortArrowIcon from '@/icons/SortArrowIcon.vue'
 import { useUserStore, useAuthStore } from '@/stores'
 import { storeToRefs } from 'pinia'
-import { showConfirmationDialog, showSuccessToast, showApiErrorToast } from '@/helpers/sweetalert'
+import {
+  showConfirmationDialog,
+  showSuccessToast,
+  showErrorToast,
+  showApiErrorToast,
+} from '@/helpers/sweetalert'
 import ComponentCard from '@/components/common/ComponentCard.vue'
 import PaginationBarAdmin from '@/components/common/PaginationBarAdmin.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -252,19 +278,29 @@ const setStatusFilter = (value) => {
   loadUsers()
 }
 
+const ROLES = ['ADMIN', 'USER']
+
 const handleSearch = (params) => {
-  searchQuery.value = params.query
+  let query = params.query
+  // The API only accepts an exact role, so map partial input ("adm") to the role it starts with.
+  if (params.by === 'role' && query.trim()) {
+    const role = ROLES.find((r) => r.startsWith(query.trim().toUpperCase()))
+    if (!role) {
+      showErrorToast('Role must be ADMIN or USER.')
+      return
+    }
+    query = role
+  }
+  searchQuery.value = query
   searchBy.value = params.by
   loadUsers()
 }
 
 const handleSort = (newSortBy) => {
-  if (sortBy.value === newSortBy) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortBy.value = newSortBy
-    sortOrder.value = 'asc'
-  }
+  // Same column toggles the direction; a new column starts ascending.
+  const toggled = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  sortOrder.value = sortBy.value === newSortBy ? toggled : 'asc'
+  sortBy.value = newSortBy
   loadUsers(pagination.value.page)
 }
 
