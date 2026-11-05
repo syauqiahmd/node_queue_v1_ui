@@ -1,50 +1,94 @@
-# queue-management-system
+# QMS Frontend (node-queue-ui)
 
-## Project Setup
+Web UI of the Queue Management System (QMS) used by Mall Pelayanan Publik Kab. Berau: the kiosk
+where visitors take a ticket, the queue monitor, and the staff/admin app. It talks to the backend
+in [node_queue_v1](https://github.com/syauqiahmd/node_queue_v1).
 
-```sh
+**Documentation (product, architecture, API reference, deployment, operations):**
+[QMS — Documentation on Notion](https://app.notion.com/p/40f52441ab0481e0b796d1a4b77ca84c)
+
+## Screens
+
+| Path | Screen |
+| --- | --- |
+| `/ticket` | Kiosk: choose a service, optional visitor form, print the ticket (Recta thermal printer) |
+| `/monitor` | Queue monitor: called tickets with voice announcement |
+| `/login` | Staff login |
+| `/admin` | Dashboard and queue management (call, recall, resolve, prioritize) |
+| `/admin/...` | Organizations, services, counters, users, visitors, visitor histories, activity, reports |
+
+## Tech stack
+
+Vue 3, Vite, Pinia, Vue Router, Tailwind CSS, Axios, SweetAlert2, Grafana Faro, oxlint + ESLint + Prettier.
+
+## Requirements
+
+- Node.js 22.15.1 (`.nvmrc`; run `nvm use`)
+- A running backend (see the backend README), default `http://localhost:8000`
+
+## Getting started
+
+```bash
+git clone https://github.com/syauqiahmd/node_queue_v1_ui.git
+cd node_queue_v1_ui
+nvm use
 npm install
+cp .env.example .env     # VITE_API_BASE_URL=http://localhost:8000/api, VITE_WS_URL=ws://localhost:8080
+npm run dev              # http://localhost:5173
 ```
 
-### Compile and Hot-Reload for Development
+The backend's `CORS_ORIGIN` must include `http://localhost:5173`.
 
-```sh
-npm run dev
+`VITE_*` settings are **baked in at build time**: restart `npm run dev` or rebuild after changing
+`.env`. All of them are listed in `.env.example` and described in the documentation
+(*Developer Guide → Environment Variables*).
+
+## Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev server with hot reload |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | oxlint, then ESLint (with fixes) |
+| `npm run format` | Prettier on `src/` |
+
+A Husky pre-commit hook runs lint-staged (oxlint → ESLint → Prettier) on staged files.
+
+## Project structure
+
+```
+src/
+├── main.js, App.vue
+├── router/        routes (/ticket, /monitor, /login, /admin/...)
+├── views/         pages
+├── components/    shared UI components and layout
+├── stores/        Pinia stores (auth, organizations, services, queues, ...)
+├── helpers/       API client (request.js), constants (API paths), redaction, observability
+├── composables/
+├── assets/, icons/
+public/            static files (favicon, logo, bell sound)
 ```
 
-### Compile and Minify for Production
+## Deployment
 
-```sh
-npm run build
+Production builds the UI into the `web` container of the Docker Compose stack defined in the
+backend repo (`deploy/docker/`): nginx serves `dist/` and proxies the API and WebSocket on the
+same origin. To deploy a change on the server:
+
+```bash
+cd ~/site
+git -C qms-ui pull --ff-only
+docker compose up -d --build
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+Building and serving it on a regular VPS (PM2) is described in the documentation
+(*Deployment & Operations*).
 
-```sh
-npm run lint
-```
+## Changelog
 
-## API Request Helper
+See [CHANGELOG.md](CHANGELOG.md).
 
-The project includes a helpful Axios instance configured in `src/helpers/request.js` to simplify making requests to the backend API.
+## License
 
-### Features:
-- **Base URL:** Pre-configured to point to your backend (default: `http://localhost:3000`). You should adjust this URL in the file to match your API server.
-- **Automatic Authorization Header:** It automatically attaches the `Authorization: Bearer <token>` header to every request if an `access_token` is found in `localStorage`.
-- **Centralized Error Handling:** API errors are automatically caught and displayed using a `SweetAlert2` popup. The popup shows the error message from the API response.
-- **Copy Transaction ID:** If the error response from the API contains a `transactionId`, it will be displayed in the error popup, and the user can easily copy it to the clipboard.
-
-### How to Use
-
-First, import the request helper into your Vue component or Pinia store:
-
-```javascript
-import request from '@/helpers/request';
-```
-
-The helper handles the `Authorization` header automatically. It checks `localStorage` for an `access_token`. For login or other authentication actions, you should save the token there:
-
-```javascript
-// Example after a successful login
-localStorage.setItem('access_token', response.data.access_token);
-```
+Proprietary. All rights reserved.
