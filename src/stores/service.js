@@ -33,6 +33,10 @@ export const useServiceStore = defineStore('service', {
           params.append('page', page)
           params.append('pageSize', pageSize)
         }
+        // Without this the API falls back to its default page size (10).
+        if (!pagination) {
+          params.append('pagination', 'false')
+        }
         if (search && searchBy) {
           params.append(searchBy, search)
         }
