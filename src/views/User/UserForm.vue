@@ -34,7 +34,9 @@
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
             Password
             <span v-if="!id" class="text-error-500">*</span>
-            <span v-else class="text-gray-400 font-normal text-xs ml-1">(leave blank to keep current)</span>
+            <span v-else class="text-gray-400 font-normal text-xs ml-1"
+              >(leave blank to keep current)</span
+            >
           </label>
           <input
             type="password"
@@ -71,7 +73,9 @@
             :show-status="false"
             @update:modelValue="errors.organizationId = ''"
           />
-          <p v-if="errors.organizationId" class="mt-1 text-sm text-error-500">{{ errors.organizationId }}</p>
+          <p v-if="errors.organizationId" class="mt-1 text-sm text-error-500">
+            {{ errors.organizationId }}
+          </p>
         </div>
 
         <div v-if="id">
@@ -135,7 +139,7 @@ const { fetchOrganizations } = organizationStore
 
 const roleOptions = [
   { value: 'ADMIN', label: 'Admin' },
-  { value: 'USER',  label: 'User' },
+  { value: 'USER', label: 'User' },
 ]
 
 const organizationOptions = computed(() =>
@@ -163,9 +167,12 @@ const errors = reactive({
   organizationId: '',
 })
 
-const baseInputClass = 'dark:bg-dark-900 h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
-const normalClass = 'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800'
-const errorClass = 'border-error-400 focus:border-error-400 focus:ring-error-500/10 dark:border-error-500'
+const baseInputClass =
+  'dark:bg-dark-900 h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
+const normalClass =
+  'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800'
+const errorClass =
+  'border-error-400 focus:border-error-400 focus:ring-error-500/10 dark:border-error-500'
 
 const fieldClass = (error) => [baseInputClass, error ? errorClass : normalClass]
 
@@ -205,11 +212,10 @@ const id = route.params.id
 
 onMounted(async () => {
   await fetchOrganizations({
-    pageSize: 25,
     sortBy: 'name',
     sortOrder: 'asc',
     isActive: true,
-    pagination: true,
+    pagination: false,
   })
   if (id) {
     currentPageTitle.value = 'Edit User'
@@ -223,6 +229,17 @@ onMounted(async () => {
   await nextTick()
   firstInputRef.value?.focus()
 })
+
+const saveUser = async (payload) => {
+  if (id) {
+    await updateUser(id, payload)
+    showSuccessToast('User updated successfully!')
+    return
+  }
+  delete payload.isActive
+  await createUser(payload)
+  showSuccessToast('User created successfully!')
+}
 
 const handleSubmit = async () => {
   if (!validate()) return
@@ -241,14 +258,7 @@ const handleSubmit = async () => {
       basePayload.password = formData.password
     }
 
-    if (id) {
-      await updateUser(id, basePayload)
-      showSuccessToast('User updated successfully!')
-    } else {
-      delete basePayload.isActive
-      await createUser(basePayload)
-      showSuccessToast('User created successfully!')
-    }
+    await saveUser(basePayload)
     router.push('/admin/users')
   } catch (error) {
     showApiErrorToast(error, 'Failed to save user.')

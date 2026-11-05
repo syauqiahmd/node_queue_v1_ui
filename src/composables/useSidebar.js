@@ -30,9 +30,9 @@ export function useSidebarProvider() {
   const toggleSidebar = () => {
     if (isMobile.value) {
       isMobileOpen.value = !isMobileOpen.value
-    } else {
-      isExpanded.value = !isExpanded.value
+      return
     }
+    isExpanded.value = !isExpanded.value
   }
 
   const toggleMobileSidebar = () => {

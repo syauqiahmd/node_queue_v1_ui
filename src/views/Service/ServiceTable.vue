@@ -13,19 +13,37 @@
       <div class="flex flex-wrap gap-2 mb-4">
         <button
           @click="setStatusFilter('')"
-          :class="statusFilter === '' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          :class="
+            statusFilter === ''
+              ? 'bg-brand-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'
+          "
           class="px-3 py-1.5 text-xs font-medium rounded-full transition"
-        >All</button>
+        >
+          All
+        </button>
         <button
           @click="setStatusFilter(true)"
-          :class="statusFilter === true ? 'bg-success-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          :class="
+            statusFilter === true
+              ? 'bg-success-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'
+          "
           class="px-3 py-1.5 text-xs font-medium rounded-full transition"
-        >Active</button>
+        >
+          Active
+        </button>
         <button
           @click="setStatusFilter(false)"
-          :class="statusFilter === false ? 'bg-error-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'"
+          :class="
+            statusFilter === false
+              ? 'bg-error-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-gray-300'
+          "
           class="px-3 py-1.5 text-xs font-medium rounded-full transition"
-        >Inactive</button>
+        >
+          Inactive
+        </button>
       </div>
 
       <div
@@ -84,7 +102,10 @@
               <!-- Empty state -->
               <tr v-else-if="!loading && services.length === 0">
                 <td :colspan="6">
-                  <EmptyState message="No services found" description="Try adjusting your search or filter criteria." />
+                  <EmptyState
+                    message="No services found"
+                    description="Try adjusting your search or filter criteria."
+                  />
                 </td>
               </tr>
 
@@ -254,12 +275,10 @@ const handleSearch = (params) => {
 }
 
 const handleSort = (newSortBy) => {
-  if (sortBy.value === newSortBy) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortBy.value = newSortBy
-    sortOrder.value = 'asc'
-  }
+  // Same column toggles the direction; a new column starts ascending.
+  const toggled = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  sortOrder.value = sortBy.value === newSortBy ? toggled : 'asc'
+  sortBy.value = newSortBy
   loadServices(pagination.value.page)
 }
 

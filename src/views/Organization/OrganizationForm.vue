@@ -158,25 +158,29 @@ onMounted(async () => {
   firstInputRef.value?.focus()
 })
 
+const saveOrganization = async () => {
+  if (id) {
+    const payload = {
+      name: formData.name,
+      fullName: formData.fullName,
+      isActive: formData.isActive,
+    }
+    if (formData.logoUrl) payload.logoUrl = formData.logoUrl
+    await updateOrganization(id, payload)
+    showSuccessToast('Organization updated successfully!')
+    return
+  }
+  const payload = { name: formData.name, fullName: formData.fullName }
+  if (formData.logoUrl) payload.logoUrl = formData.logoUrl
+  await createOrganization(payload)
+  showSuccessToast('Organization created successfully!')
+}
+
 const handleSubmit = async () => {
   if (!validate()) return
 
   try {
-    if (id) {
-      const payload = {
-        name: formData.name,
-        fullName: formData.fullName,
-        isActive: formData.isActive,
-      }
-      if (formData.logoUrl) payload.logoUrl = formData.logoUrl
-      await updateOrganization(id, payload)
-      showSuccessToast('Organization updated successfully!')
-    } else {
-      const payload = { name: formData.name, fullName: formData.fullName }
-      if (formData.logoUrl) payload.logoUrl = formData.logoUrl
-      await createOrganization(payload)
-      showSuccessToast('Organization created successfully!')
-    }
+    await saveOrganization()
     router.push('/admin/organizations')
   } catch (error) {
     showApiErrorToast(error, 'Failed to save organization.')

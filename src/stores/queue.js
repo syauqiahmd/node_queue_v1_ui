@@ -5,6 +5,7 @@ import { API_PATHS } from '../helpers/constants'
 export const useQueueStore = defineStore('queue', {
   state: () => ({
     queueList: [],
+    waitingList: [],
     queueSummary: null,
     loading: false,
   }),
@@ -86,6 +87,15 @@ export const useQueueStore = defineStore('queue', {
         console.error(`Error fetching queue summary for service ${serviceId}:`, error)
       } finally {
         this.loading = false
+      }
+    },
+    // Without a status filter the API returns today's tickets that have not been called yet.
+    async fetchWaitingList(serviceId) {
+      try {
+        const { data } = await request.get(API_PATHS.QUEUES.GET_LIST(serviceId))
+        this.waitingList = data.data
+      } catch (error) {
+        console.error(`Error fetching waiting list for service ${serviceId}:`, error)
       }
     },
     async prioritizeTicket(queueId) {

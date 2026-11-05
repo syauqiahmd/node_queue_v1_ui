@@ -17,11 +17,15 @@
               maxlength="3"
               :class="[fieldClass(errors.counterNumber), 'pr-12']"
             />
-            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+            <span
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"
+            >
               {{ formData.counterNumber.length }}/3
             </span>
           </div>
-          <p v-if="errors.counterNumber" class="mt-1 text-sm text-error-500">{{ errors.counterNumber }}</p>
+          <p v-if="errors.counterNumber" class="mt-1 text-sm text-error-500">
+            {{ errors.counterNumber }}
+          </p>
         </div>
 
         <div>
@@ -142,31 +146,35 @@ const errors = reactive({ counterNumber: '', serviceId: '' })
 
 const selectedOrganizationId = ref(null)
 
-const baseInputClass = 'dark:bg-dark-900 h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
-const normalClass = 'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800'
-const errorClass = 'border-error-400 focus:border-error-400 focus:ring-error-500/10 dark:border-error-500'
+const baseInputClass =
+  'dark:bg-dark-900 h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
+const normalClass =
+  'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800'
+const errorClass =
+  'border-error-400 focus:border-error-400 focus:ring-error-500/10 dark:border-error-500'
 
 const fieldClass = (error) => [baseInputClass, error ? errorClass : normalClass]
+
+const counterNumberError = (value) => {
+  if (!value.trim()) return 'Counter number is required.'
+  if (value.trim().length > 3) return 'Counter number must be at most 3 characters.'
+  return ''
+}
+
+const serviceError = () => {
+  if (!selectedOrganizationId.value) return 'Please select an organization first.'
+  if (!formData.serviceId) return 'Service is required.'
+  return ''
+}
 
 const validate = () => {
   errors.counterNumber = ''
   errors.serviceId = ''
   let valid = true
 
-  if (!formData.counterNumber.trim()) {
-    errors.counterNumber = 'Counter number is required.'
-    valid = false
-  } else if (formData.counterNumber.trim().length > 3) {
-    errors.counterNumber = 'Counter number must be at most 3 characters.'
-    valid = false
-  }
-  if (!selectedOrganizationId.value) {
-    errors.serviceId = 'Please select an organization first.'
-    valid = false
-  } else if (!formData.serviceId) {
-    errors.serviceId = 'Service is required.'
-    valid = false
-  }
+  errors.counterNumber = counterNumberError(formData.counterNumber)
+  errors.serviceId = serviceError()
+  if (errors.counterNumber || errors.serviceId) valid = false
 
   return valid
 }
@@ -175,11 +183,10 @@ const id = route.params.id
 
 onMounted(async () => {
   await fetchOrganizations({
-    pageSize: 25,
     sortBy: 'name',
     sortOrder: 'asc',
     isActive: true,
-    pagination: true,
+    pagination: false,
   })
   if (id) {
     currentPageTitle.value = 'Edit Counter'
@@ -189,6 +196,11 @@ onMounted(async () => {
     formData.isActive = counter.value.isActive
     await fetchService(formData.serviceId)
     selectedOrganizationId.value = service.value.organizationId
+  }
+  if (!id && organizations.value.length > 0) {
+    selectedOrganizationId.value = organizations.value[0].id
+  }
+  if (selectedOrganizationId.value) {
     await fetchServices({
       pagination: true,
       pageSize: 25,
@@ -197,41 +209,33 @@ onMounted(async () => {
       isActive: true,
       organizationId: selectedOrganizationId.value,
     })
-  } else {
-    if (organizations.value.length > 0) {
-      selectedOrganizationId.value = organizations.value[0].id
-      await fetchServices({
-        pagination: true,
-        pageSize: 25,
-        sortBy: 'name',
-        sortOrder: 'asc',
-        isActive: true,
-        organizationId: selectedOrganizationId.value,
-      })
-    }
   }
   await nextTick()
   firstInputRef.value?.focus()
 })
 
+const saveCounter = async () => {
+  if (id) {
+    await updateCounter(id, {
+      counterNumber: formData.counterNumber,
+      serviceId: formData.serviceId,
+      isActive: formData.isActive,
+    })
+    showSuccessToast('Counter updated successfully!')
+    return
+  }
+  await createCounter({
+    counterNumber: formData.counterNumber,
+    serviceId: formData.serviceId,
+  })
+  showSuccessToast('Counter created successfully!')
+}
+
 const handleSubmit = async () => {
   if (!validate()) return
 
   try {
-    if (id) {
-      await updateCounter(id, {
-        counterNumber: formData.counterNumber,
-        serviceId: formData.serviceId,
-        isActive: formData.isActive,
-      })
-      showSuccessToast('Counter updated successfully!')
-    } else {
-      await createCounter({
-        counterNumber: formData.counterNumber,
-        serviceId: formData.serviceId,
-      })
-      showSuccessToast('Counter created successfully!')
-    }
+    await saveCounter()
     router.push('/admin/counters')
   } catch (error) {
     showApiErrorToast(error, 'Failed to save counter.')

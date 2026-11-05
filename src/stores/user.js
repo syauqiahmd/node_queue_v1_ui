@@ -11,10 +11,18 @@ export const useUserStore = defineStore('user', {
       page: 1,
       pageSize: DEFAULT_PAGE_SIZE,
       total: 0,
-    }
+    },
   }),
   actions: {
-    async fetchUsers({ page = 1, pageSize = DEFAULT_PAGE_SIZE, search = '', searchBy = 'userName', sortBy = 'userName', sortOrder = 'asc', isActive = '' } = {}) {
+    async fetchUsers({
+      page = 1,
+      pageSize = DEFAULT_PAGE_SIZE,
+      search = '',
+      searchBy = 'userName',
+      sortBy = 'userName',
+      sortOrder = 'asc',
+      isActive = '',
+    } = {}) {
       this.loading = true
       try {
         const params = new URLSearchParams()
@@ -32,7 +40,7 @@ export const useUserStore = defineStore('user', {
         if (isActive !== '') {
           params.append('isActive', isActive)
         }
-        
+
         const response = await request.get(`${API_PATHS.USERS.GET_ALL}?${params.toString()}`)
         this.users = response.data.data.data
         this.pagination.page = page
@@ -89,6 +97,6 @@ export const useUserStore = defineStore('user', {
       } finally {
         this.loading = false
       }
-    }
-  }
+    },
+  },
 })

@@ -201,12 +201,10 @@ const handleSearch = (params) => {
 }
 
 const handleSort = (newSortBy) => {
-  if (sortBy.value === newSortBy) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortBy.value = newSortBy
-    sortOrder.value = 'asc'
-  }
+  // Same column toggles the direction; a new column starts ascending.
+  const toggled = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  sortOrder.value = sortBy.value === newSortBy ? toggled : 'asc'
+  sortBy.value = newSortBy
   loadVisitors(pagination.value.page)
 }
 

@@ -20,7 +20,10 @@
               <svg
                 class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200 shrink-0"
                 :class="{ 'rotate-180': isCategoryOpen }"
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2.5"
               >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
@@ -60,11 +63,15 @@
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <svg
                 class="fill-gray-400 dark:fill-gray-500"
-                width="18" height="18" viewBox="0 0 20 20" fill="none"
+                width="18"
+                height="18"
+                viewBox="0 0 20 20"
+                fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  fill-rule="evenodd" clip-rule="evenodd"
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
                   d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z"
                 />
               </svg>
@@ -95,17 +102,17 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
-  searchableList: { type: Array,   default: () => [] },
-  showAddButton:  { type: Boolean, default: false },
-  addButtonText:  { type: String,  default: 'Tambah Data' },
+  searchableList: { type: Array, default: () => [] },
+  showAddButton: { type: Boolean, default: false },
+  addButtonText: { type: String, default: 'Tambah Data' },
 })
 
 const emit = defineEmits(['perform-search'])
 
-const searchQuery  = ref('')
-const searchBy     = ref(props.searchableList?.[0]?.param || '')
+const searchQuery = ref('')
+const searchBy = ref(props.searchableList?.[0]?.param || '')
 const isCategoryOpen = ref(false)
-const categoryRef  = ref(null)
+const categoryRef = ref(null)
 
 const currentLabel = computed(
   () => props.searchableList.find((i) => i.param === searchBy.value)?.name ?? '',

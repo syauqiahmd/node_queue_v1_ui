@@ -52,11 +52,11 @@ import SearchBar from '../layout/header/SearchBar.vue'
 
 defineProps({
   isTableData: { type: Boolean, default: false },
-  isFormData:  { type: Boolean, default: false },
-  className:   { type: String,  default: '' },
+  isFormData: { type: Boolean, default: false },
+  className: { type: String, default: '' },
   searchableList: { type: Array, default: () => [] },
-  showAddButton:  { type: Boolean, default: false },
-  addButtonText:  { type: String, default: 'Tambah Data' },
+  showAddButton: { type: Boolean, default: false },
+  addButtonText: { type: String, default: 'Tambah Data' },
 })
 
 const emit = defineEmits(['handle-search'])

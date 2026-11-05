@@ -4,6 +4,7 @@ export const API_PATHS = {
   AUTH: {
     LOGIN: '/v1/public/login',
     LOGOUT: '/v1/auth/logout',
+    VALIDATE_TOKEN: '/v1/auth/validate-token',
   },
   ORGANIZATIONS: {
     GET_ALL: '/v1/organizations',

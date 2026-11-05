@@ -24,7 +24,10 @@
       <svg
         class="shrink-0 w-4 h-4 text-gray-400 transition-transform duration-200"
         :class="{ 'rotate-180': isOpen }"
-        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
       >
         <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
       </svg>
@@ -79,11 +82,13 @@
                   ? 'text-brand-500 dark:text-brand-400 font-medium'
                   : 'text-gray-800 dark:text-white/90',
               ]"
-            >{{ option.label }}</span>
+              >{{ option.label }}</span
+            >
             <span
               v-if="showStatus && option.isActive === false"
               class="ml-auto shrink-0 text-xs text-error-400 dark:text-error-500"
-            >Inactive</span>
+              >Inactive</span
+            >
           </div>
 
           <div v-if="!options.length" class="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">
@@ -100,9 +105,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   modelValue: { default: null },
-  options:    { type: Array,   default: () => [] },
+  options: { type: Array, default: () => [] },
   placeholder: { type: String, default: '-- Select --' },
-  disabled:   { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
   showStatus: { type: Boolean, default: true },
 })
 
@@ -114,8 +119,7 @@ const containerRef = ref(null)
 const selected = computed(() => props.options.find((o) => o.value === props.modelValue) ?? null)
 
 // When showStatus is off, all options are selectable regardless of isActive
-const isSelectable = (option) =>
-  !props.showStatus || option.isActive !== false
+const isSelectable = (option) => !props.showStatus || option.isActive !== false
 
 const toggle = () => {
   if (!props.disabled) isOpen.value = !isOpen.value

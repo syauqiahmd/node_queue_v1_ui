@@ -321,48 +321,50 @@ const connectSocket = () => {
   socket.onmessage = (ev) => {
     try {
       const parsed = JSON.parse(ev.data)
-      let event = parsed && parsed.event ? parsed.event : null
-      const data = parsed && parsed.data ? parsed.data : parsed
-      if (!event && data && (data.queueNumber || data.counterNumber || data.prefix)) {
-        event = 'ticket:called'
-      }
-      if (event === 'ticket:called') {
-        const key = `${data.prefix || ''}-${data.queueNumber || ''}-${data.counterNumber || ''}`
-        const nowTs = Date.now()
-        if (key && key === lastCallKey && nowTs - lastCallTs < 5000) return
-        lastCallKey = key
-        lastCallTs = nowTs
-        const prev = { ...currentQueue.value }
-        if (prev.number !== '-' && prev.counter !== '-') {
-          queueHistory.value.unshift({
-            id: Date.now(),
-            number: prev.number,
-            counter: prev.counter,
-            ...badgeStyles[0],
-          })
-          if (queueHistory.value.length > 3) queueHistory.value.pop()
-          queueHistory.value.forEach((item, index) => {
-            if (index < badgeStyles.length) Object.assign(item, badgeStyles[index])
-          })
-        }
-        const qn =
-          (data && data.queueNumber) ||
-          (data && data.prefix && data.queueNumber ? `${data.prefix}-${data.queueNumber}` : '-')
-        currentQueue.value = {
-          number: qn,
-          counter: data.counterNumber || '-',
-          service: data.serviceName || data.service?.name || null,
-        }
-        triggerFlash()
-        enqueueAnnouncement(
-          data.soundUrl,
-          `${data.prefix || ''}-${data.queueNumber || ''}-${data.counterNumber || ''}`,
-        )
-      }
+      const data = parsed?.data ?? parsed
+      // Older payloads had no `event` field; treat anything that looks like a ticket as a call.
+      const looksLikeTicket = !!(data?.queueNumber || data?.counterNumber || data?.prefix)
+      const event = parsed?.event || (looksLikeTicket ? 'ticket:called' : null)
+      if (event === 'ticket:called') showCalledTicket(data)
     } catch (e) {
       console.error('Error processing message:', e)
     }
   }
+}
+
+const callKey = (data) =>
+  `${data.prefix || ''}-${data.queueNumber || ''}-${data.counterNumber || ''}`
+
+const pushCurrentToHistory = () => {
+  const prev = { ...currentQueue.value }
+  if (prev.number === '-' || prev.counter === '-') return
+  queueHistory.value.unshift({
+    id: Date.now(),
+    number: prev.number,
+    counter: prev.counter,
+    ...badgeStyles[0],
+  })
+  if (queueHistory.value.length > 3) queueHistory.value.pop()
+  queueHistory.value.forEach((item, index) => {
+    if (index < badgeStyles.length) Object.assign(item, badgeStyles[index])
+  })
+}
+
+const showCalledTicket = (data) => {
+  const key = callKey(data)
+  const nowTs = Date.now()
+  // A recall re-sends the same call; ignore repeats within 5 seconds.
+  if (key === lastCallKey && nowTs - lastCallTs < 5000) return
+  lastCallKey = key
+  lastCallTs = nowTs
+  pushCurrentToHistory()
+  currentQueue.value = {
+    number: data.queueNumber || '-',
+    counter: data.counterNumber || '-',
+    service: data.serviceName || data.service?.name || null,
+  }
+  triggerFlash()
+  enqueueAnnouncement(data.soundUrl, key)
 }
 
 const disconnectSocket = () => {
@@ -500,11 +502,11 @@ const enableAudio = async () => {
 }
 
 const toggleAudio = async () => {
-  if (!audioEnabled.value) {
-    await enableAudio()
-  } else {
+  if (audioEnabled.value) {
     audioEnabled.value = false
+    return
   }
+  await enableAudio()
 }
 
 const fetchQueues = async () => {
@@ -514,22 +516,22 @@ const fetchQueues = async () => {
     const headers = { accept: 'application/json' }
     const { data } = await request.get(API_PATHS.QUEUES.GET_RECENT_PUBLIC, { headers })
     const arr = Array.isArray(data?.data) ? data.data.slice(0, 4) : []
-    if (arr.length > 0) {
-      currentQueue.value = {
-        number: arr[0].queueNumber || '-',
-        counter: arr[0].counterNumber || '-',
-        service: arr[0].serviceName || arr[0].service?.name || null,
-      }
-      queueHistory.value = arr.slice(1, 4).map((q, i) => ({
-        id: q.id,
-        number: q.queueNumber,
-        counter: q.counterNumber,
-        ...badgeStyles[i % badgeStyles.length],
-      }))
-    } else {
+    if (arr.length === 0) {
       currentQueue.value = { number: '-', counter: '-', service: null }
       queueHistory.value = []
+      return
     }
+    currentQueue.value = {
+      number: arr[0].queueNumber || '-',
+      counter: arr[0].counterNumber || '-',
+      service: arr[0].serviceName || arr[0].service?.name || null,
+    }
+    queueHistory.value = arr.slice(1, 4).map((q, i) => ({
+      id: q.id,
+      number: q.queueNumber,
+      counter: q.counterNumber,
+      ...badgeStyles[i % badgeStyles.length],
+    }))
   } catch {
     error.value = 'Gagal memuat data antrian.'
   } finally {
