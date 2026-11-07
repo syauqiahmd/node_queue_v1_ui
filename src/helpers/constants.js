@@ -13,6 +13,7 @@ export const API_PATHS = {
     CREATE: '/v1/organizations',
     UPDATE: (id) => `/v1/organizations/${id}`,
     DELETE: (id) => `/v1/organizations/${id}`,
+    UPLOAD_LOGO: (id) => `/v1/organizations/${id}/logo`,
   },
   SERVICES: {
     GET_ALL: '/v1/services',

@@ -3,7 +3,13 @@
     class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col justify-center items-center p-2 md:p-6 monitor-root"
   >
     <!-- Persistent audio toggle -->
-    <div class="fixed top-4 right-4 z-50">
+    <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
+      <span
+        v-if="audioBlocked && !audioEnabled"
+        class="px-3 py-1.5 rounded-full bg-amber-500/90 text-slate-900 text-sm font-medium shadow"
+      >
+        Klik layar untuk mengaktifkan suara
+      </span>
       <button
         @click="toggleAudio"
         :title="audioEnabled ? 'Matikan suara' : 'Aktifkan suara'"
@@ -229,6 +235,7 @@ const error = ref('')
 const currentQueue = ref({ number: '-', counter: '-', service: null })
 const queueHistory = ref([])
 const audioEnabled = ref(false)
+const audioBlocked = ref(false) // browser refused autoplay; waiting for a click/tap
 const connected = ref(false)
 const connectionStatus = ref('disconnected')
 const isFlashing = ref(false)
@@ -479,33 +486,67 @@ const enqueueAnnouncement = (soundUrl, key) => {
   startPlaybackLoop()
 }
 
-const enableAudio = async () => {
+// The sound on/off choice survives reloads and PC restarts. Default is on: announcing calls
+// is the monitor's job.
+const AUDIO_PREF_KEY = 'qms.monitor.audio'
+const readAudioPref = () => {
   try {
-    if (!bellAudio) {
-      bellAudio = document.createElement('audio')
-      bellAudio.src = bellUrl
-      bellAudio.preload = 'auto'
-      try {
-        bellAudio.load()
-      } catch (err) {
-        console.error('Error loading audio:', err)
-      }
+    return localStorage.getItem(AUDIO_PREF_KEY)
+  } catch {
+    return null
+  }
+}
+const saveAudioPref = (value) => {
+  try {
+    localStorage.setItem(AUDIO_PREF_KEY, value)
+  } catch {
+    void 0
+  }
+}
+
+// Unlocks audio playback. The probe plays the bell unmuted at volume 0: browsers reject that
+// with NotAllowedError until the page has had a click/tap, unless autoplay is allowed for the
+// site (Chrome flag --autoplay-policy=no-user-gesture-required, or site setting Sound: Allow).
+// A muted probe would always succeed and hide the block.
+const enableAudio = async () => {
+  if (!bellAudio) {
+    bellAudio = document.createElement('audio')
+    bellAudio.src = bellUrl
+    bellAudio.preload = 'auto'
+    try {
+      bellAudio.load()
+    } catch (err) {
+      console.error('Error loading audio:', err)
     }
-    bellAudio.muted = true
+  }
+  try {
+    bellAudio.muted = false
+    bellAudio.volume = 0
     await bellAudio.play()
     bellAudio.pause()
-    bellAudio.muted = false
+    bellAudio.currentTime = 0
   } catch (err) {
+    if (err?.name === 'NotAllowedError') {
+      audioBlocked.value = true
+      return false
+    }
     console.error('Error playing audio:', err)
+  } finally {
+    bellAudio.volume = 1
   }
+  audioBlocked.value = false
   audioEnabled.value = true
+  return true
 }
 
 const toggleAudio = async () => {
   if (audioEnabled.value) {
     audioEnabled.value = false
+    audioBlocked.value = false
+    saveAudioPref('off')
     return
   }
+  saveAudioPref('on')
   await enableAudio()
 }
 
@@ -555,7 +596,7 @@ const updateDateTime = () => {
 let intervalId
 let pollId
 const unlockHandler = () => {
-  if (!audioEnabled.value) enableAudio()
+  if (!audioEnabled.value && readAudioPref() !== 'off') enableAudio()
 }
 
 onMounted(async () => {
@@ -571,6 +612,9 @@ onMounted(async () => {
   } catch (err) {
     console.error('Error loading audio:', err)
   }
+  // Turn sound back on without a click when the browser allows it; otherwise the first
+  // click/tap anywhere does it (unlockHandler).
+  if (readAudioPref() !== 'off') await enableAudio()
   window.addEventListener('click', unlockHandler, { once: true })
   window.addEventListener('touchstart', unlockHandler, { once: true })
 })

@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Organization logo upload** — admin form uploads a PNG/JPG/WEBP logo (max 1 MB) to the API (`POST /organizations/:id/logo`); stored on our own S3 so the kiosk/monitor CSP allows it
+
+### Fixed
+- **Kiosk printing** — Recta client bundled at a pinned version (`recta@1.0.0`) and lazy-loaded, instead of `recta@latest` from jsDelivr at print time
+- **Monitor sound after reload** — on/off setting kept in `localStorage`; sound turns back on by itself when the browser allows autoplay, otherwise a "Klik layar untuk mengaktifkan suara" hint is shown
+
 ---
 
 ## [0.4.0] — 2026-05-02
