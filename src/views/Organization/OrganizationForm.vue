@@ -49,6 +49,37 @@
 
         <div>
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+            Logo
+          </label>
+          <div class="flex flex-wrap items-center gap-3">
+            <input
+              ref="logoInputRef"
+              type="file"
+              :accept="LOGO_TYPES.join(',')"
+              class="hidden"
+              @change="onLogoSelected"
+            />
+            <button
+              type="button"
+              :disabled="uploadingLogo"
+              class="flex items-center justify-center gap-2 h-11 px-5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-60 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+              @click="logoInputRef?.click()"
+            >
+              {{ uploadingLogo ? 'Uploading…' : id ? 'Upload new logo' : 'Choose logo' }}
+            </button>
+            <span v-if="pendingLogo" class="text-sm text-gray-600 dark:text-gray-400">
+              {{ pendingLogo.name }} — uploaded when you save
+            </span>
+          </div>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            PNG, JPG or WEBP, max 1 MB. Stored on our own server, so it also shows on the kiosk and
+            monitor (images from other websites are blocked there).
+          </p>
+          <p v-if="errors.logoFile" class="mt-1 text-sm text-error-500">{{ errors.logoFile }}</p>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
             Logo URL (optional)
           </label>
           <input
@@ -106,7 +137,47 @@ const firstInputRef = ref(null)
 
 const organizationStore = useOrganizationStore()
 const { organization } = storeToRefs(organizationStore)
-const { fetchOrganization, createOrganization, updateOrganization } = organizationStore
+const { fetchOrganization, createOrganization, updateOrganization, uploadOrganizationLogo } =
+  organizationStore
+
+// Must match the API (POST /organizations/:id/logo): PNG, JPEG or WEBP up to 1 MB.
+const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp']
+const MAX_LOGO_BYTES = 1024 * 1024
+const logoInputRef = ref(null)
+const uploadingLogo = ref(false)
+// New organization: the file waits until the organization exists (uploaded right after create).
+const pendingLogo = ref(null)
+
+const checkLogoFile = (file) => {
+  if (!LOGO_TYPES.includes(file.type)) return 'Logo must be a PNG, JPG or WEBP image.'
+  if (file.size > MAX_LOGO_BYTES) return 'Logo must be 1 MB or smaller.'
+  return ''
+}
+
+const onLogoSelected = async (event) => {
+  const file = event.target.files?.[0]
+  event.target.value = '' // allow picking the same file again
+  if (!file) return
+  errors.logoFile = checkLogoFile(file)
+  if (errors.logoFile) return
+
+  if (!id) {
+    pendingLogo.value = file
+    return
+  }
+  // Existing organization: upload right away so the preview shows the stored logo.
+  uploadingLogo.value = true
+  try {
+    const updated = await uploadOrganizationLogo(id, file)
+    formData.logoUrl = updated.logoUrl || ''
+    errors.logoUrl = ''
+    showSuccessToast('Logo updated!')
+  } catch (error) {
+    showApiErrorToast(error, 'Failed to upload logo.')
+  } finally {
+    uploadingLogo.value = false
+  }
+}
 
 const formData = reactive({
   name: '',
@@ -115,7 +186,7 @@ const formData = reactive({
   logoUrl: '',
 })
 
-const errors = reactive({ name: '', logoUrl: '' })
+const errors = reactive({ name: '', logoUrl: '', logoFile: '' })
 
 const isValidUrl = (value) => {
   try {
@@ -171,8 +242,20 @@ const saveOrganization = async () => {
     return
   }
   const payload = { name: formData.name, fullName: formData.fullName }
-  if (formData.logoUrl) payload.logoUrl = formData.logoUrl
-  await createOrganization(payload)
+  if (formData.logoUrl && !pendingLogo.value) payload.logoUrl = formData.logoUrl
+  const created = await createOrganization(payload)
+  if (pendingLogo.value && created?.id) {
+    try {
+      await uploadOrganizationLogo(created.id, pendingLogo.value)
+    } catch (error) {
+      // The organization exists; only the logo failed. Let the admin retry from Edit.
+      showApiErrorToast(
+        error,
+        'Organization created, but the logo upload failed. Try again from Edit.',
+      )
+      return
+    }
+  }
   showSuccessToast('Organization created successfully!')
 }
 

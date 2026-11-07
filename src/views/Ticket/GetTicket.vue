@@ -552,35 +552,28 @@ onMounted(async () => {
   }
 })
 
-const ensureRectaLoaded = () => {
-  return new Promise((resolve, reject) => {
-    if (window.Recta) {
-      resolve()
-      return
-    }
-    const existing = document.getElementById('recta-js')
-    if (existing) {
-      existing.addEventListener('load', () => resolve())
-      existing.addEventListener('error', () => reject(new Error('Recta failed to load')))
-      return
-    }
-    const script = document.createElement('script')
-    script.src = 'https://cdn.jsdelivr.net/npm/recta@latest/dist/recta.js'
-    script.id = 'recta-js'
-    script.async = true
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Recta failed to load'))
-    document.head.appendChild(script)
-  })
+// Recta client, bundled with the app at a pinned version (package.json) instead of loading
+// recta@latest from a CDN, so a new upstream release can never break kiosk printing.
+// The package's `module` field points at unbundled sources, so import the UMD build directly.
+// Loaded on first print to keep the kiosk's initial bundle small.
+let rectaPromise
+const loadRecta = () => {
+  rectaPromise ??= import('recta/dist/recta.js')
+    .then((mod) => mod.default ?? mod)
+    .catch((error) => {
+      rectaPromise = undefined // let the next print retry
+      throw error
+    })
+  return rectaPromise
 }
 
 const printTicket = async (ticket, service) => {
   printError.value = false
   try {
-    await ensureRectaLoaded()
+    const Recta = await loadRecta()
     const printerId = import.meta.env.VITE_RECTA_PRINTER_ID || '1234567890'
     const profile = import.meta.env.VITE_RECTA_PROFILE || '1811'
-    const printer = new window.Recta(printerId, profile)
+    const printer = new Recta(printerId, profile)
     const orgName = ticket?.organizationName || service?.organization?.name || ''
     const orgFullName = ticket?.organizationFullName || service?.organization?.fullName || ''
     const queueStr = ticket?.queueNumber || ticketNumber.value

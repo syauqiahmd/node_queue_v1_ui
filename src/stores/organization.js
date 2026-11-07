@@ -75,10 +75,28 @@ export const useOrganizationStore = defineStore('organization', {
     async createOrganization(organization) {
       this.loading = true
       try {
-        await request.post(API_PATHS.ORGANIZATIONS.CREATE, organization)
+        const { data } = await request.post(API_PATHS.ORGANIZATIONS.CREATE, organization)
         await this.fetchOrganizations()
+        return data.data
       } catch (error) {
         console.error('Error creating organization:', error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+    // Uploads a PNG/JPEG/WEBP logo (max 1 MB) to the API, which stores it on our own S3 and
+    // updates logoUrl. Returns the updated organization.
+    async uploadOrganizationLogo(id, file) {
+      this.loading = true
+      try {
+        const form = new FormData()
+        form.append('logo', file)
+        const { data } = await request.post(API_PATHS.ORGANIZATIONS.UPLOAD_LOGO(id), form)
+        this.organization = data.data
+        return data.data
+      } catch (error) {
+        console.error(`Error uploading logo for organization ${id}:`, error)
         throw error
       } finally {
         this.loading = false
